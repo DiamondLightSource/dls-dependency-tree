@@ -6,7 +6,7 @@ PYTHON=$(PREFIX)/bin/dls-python2.6
 PYUIC=$(PREFIX)/bin/pyuic2.6
 
 # uic files
-UICS=dependency_checker_ui.py
+UICS=$(patsubst %.ui, %_ui.py, $(wildcard dls_dependency_tree/*.ui))
 
 # build the screens from .ui source
 %_ui.py: %.ui
@@ -16,11 +16,6 @@ UICS=dependency_checker_ui.py
 dist: setup.py $(wildcard dependency_tree/*) $(UICS)
 	$(PYTHON) setup.py bdist_egg
 	touch dist
-
-# Build pysvn using their non-standard Makefile
-Source/pysvn/_pysvn.so:
-	cd Source && $(PYTHON) setup.py configure
-	$(MAKE) -C Source
 
 # Clean the module
 clean:

@@ -18,7 +18,7 @@ from optparse import OptionParser
 from qt import *
 from tree import dependency_tree
 from tree_update import dependency_tree_update
-from dependency_checker_gui import Form1
+from dependency_checker_ui import Form1
 from subprocess import Popen, PIPE
 
 class ButtonListItem(QListViewItem):
@@ -250,6 +250,4 @@ def dependency_checker():
     app.exec_loop()
                                                         
 if __name__ == "__main__":
-    from pkg_resources import require
-    require("dls.environment==1.0")
     dependency_checker()
