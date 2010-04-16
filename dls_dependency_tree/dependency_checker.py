@@ -142,10 +142,10 @@ class TreeView(QtGui.QTreeWidget):
 
     def confirmWrite(self):
         """Popup a confimation box for writing changes to RELEASE"""
-        response=QMessageBox.question(None,"Write Changes",\
+        response=QtGui.QMessageBox.question(None,"Write Changes",\
              "Would you like to write your changes to configure/RELEASE?",\
-             QMessageBox.Yes,QMessageBox.No)
-        if response == QMessageBox.Yes:
+             QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+        if response == QtGui.QMessageBox.Yes:
             self.update.write_changes()
 
     def printChanges(self):
