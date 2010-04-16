@@ -1,7 +1,8 @@
 from setuptools import setup
 
-# this line allows the version to be specified in the release script
-globals().setdefault('version', '0.0')
+# these lines allow the version to be specified in Makefile.private
+import os
+version = os.environ.get("MODULEVER", "0.0")
 
 setup(
     # name of the module

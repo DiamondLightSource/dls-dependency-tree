@@ -1,4 +1,4 @@
-#!/bin/env python2.4
+#!/bin/env dls-python2.6
 
 author = "Tom Cobb"
 usage = """%prog [<module_path>]
@@ -15,20 +15,12 @@ configure/RELEASE, or the changes printed on the commandline."""
 
 import os, sys, signal, string, new, traceback
 from optparse import OptionParser
-from qt import *
+from PyQt4 import QtCore, QtGui
 from tree import dependency_tree
 from tree_update import dependency_tree_update
-from dependency_checker_ui import Form1
+from dependency_checker_ui import Ui_Form1
 from subprocess import Popen, PIPE
-
-class ButtonListItem(QListViewItem):
-    """Custom ListViewItem with options to change base and text colours"""
-    def paintCell(self, painter, cg, column, width, align):
-        # taken from Diamon web page css
-        grp = QColorGroup(cg)
-        grp.setColor(QColorGroup.Base, self.base_color)
-        grp.setColor(QColorGroup.Text, self.text_color)
-        QListViewItem.paintCell(self, painter, grp, column, width, align)
+SIGNAL = QtCore.SIGNAL
 
 def build_gui_tree(list_view,tree,parent=None):
     """Function that takes a ListView or ListViewItem, and populates its
@@ -36,76 +28,80 @@ def build_gui_tree(list_view,tree,parent=None):
     if parent==None:
         list_view.clear()
     if parent:
-        child = ButtonListItem(parent, tree.name+": "+tree.version)
+        child = QtGui.QTreeWidgetItem(parent)
     else:
-        child = ButtonListItem(list_view, tree.name+": "+tree.version)
+        child = QtGui.QTreeWidgetItem(list_view)
         list_view.child = child
+    child.setText(0, tree.name+": "+tree.version)
     child.tree = tree
-    child.setSelectable(False)
-    child.text_color = Qt.black
-    child.base_color = QColor(212,216,236) # normal - blue
+    fg = QtGui.QBrush(QtCore.Qt.black)
+    bg = QtGui.QBrush(QtGui.QColor(212,216,236)) # normal - blue
     open_parents = False
     if len(tree.updates())>1:
-        child.base_color = QColor(203,255,197) # update available - green
+        bg = QtGui.QBrush(QtGui.QColor(203,255,197)) # update available - green
         open_parents = True
     if tree.name in list_view.clashes.keys():
         open_parents = True
         if tree.path == tree.e.sortReleases([x.path for x in \
                                              list_view.clashes[tree.name]])[-1]:
-            child.text_color = QColor(153,150,0) # involved in clash: yellow
+            fg = QtGui.QBrush(QtGui.QColor(153,150,0)) # involved in clash: yellow
         else:
-            child.text_color = Qt.red # causes clash: red
+            fg = QtGui.QBrush(QtCore.Qt.red) # causes clash: red
     if tree.version == "invalid":
         open_parents = True
-        child.text_color = QColor(160,32,240) # invalid: purple
+        fg = QtGui.QBrush(QtGui.QColor(160,32,240)) # invalid: purple
+    child.setForeground(0, fg)        
+    child.setBackground(0, bg)        
     if open_parents: 
         temp_ob = child
         while temp_ob.parent():
-            list_view.setOpen(temp_ob.parent(),True)
+            temp_ob.parent().setExpanded(True)
             temp_ob = temp_ob.parent()
     for leaf in tree.leaves:
         build_gui_tree(list_view,leaf,child)
     if parent==None:
-        list_view.setOpen(child,True)
+        child.setExpanded(True)
 
-class TreeView(QListView):
+class TreeView(QtGui.QTreeWidget):
     """Custom tree view widget"""
     def __init__(self,tree,tree_type,*args):
         """Initialise the class.
         tree = dependency_tree to initialise from
         tree_type = string "original","consistent" or "latest" """
-        QListView.__init__(self,*args)
-        self.addColumn("%s Tree"%(tree_type.title()))
-        self.setPaletteBackgroundColor(QColor(212,216,236))
+        QtGui.QTreeWidget.__init__(self,*args)
+        self.setHeaderLabel("%s Tree"%(tree_type.title()))
+        palette = self.viewport().palette()
+        palette.setColor(QtGui.QPalette.Base, QtGui.QColor(212,216,236))
+        self.viewport().setPalette(palette)
         self.tree = tree
         self.clashes = tree.clashes(print_warnings=False)
         self.setRootIsDecorated(True)
-        self.setSorting(-1)
         # connect event handlers
-        QObject.connect(self, SIGNAL("onItem(QListViewItem *)"), self.mousein)
-        QObject.connect(self, SIGNAL("contextMenuRequested ( QListViewItem *,"\
-                                     "const QPoint &,int)"), self.contextMenu)
-        QObject.connect(self, SIGNAL("onViewport()"), self.mouseout)
+        self.viewportEntered.connect(self.mouseout)
         build_gui_tree(self,tree)
-        self.setOpen(self.child,True)
+        self.child.setExpanded(True)
+        self.itemEntered.connect(self.mousein)
+        self.setMouseTracking(True)
 
-    def contextMenu(self, item, pos, col):
+    def contextMenuEvent(self, event):
         """Popup a context menu at pos, fill it with svn log and revert commands
         depending on the module it is and what version it's at"""
+        pos = event.globalPos()
+        item = self.itemAt(event.pos())
         if item:
-            menu = QPopupMenu()
+            menu = QtGui.QMenu()
             self.contextItem = item
-            menu.insertItem("Edit RELEASE", self.externalEdit)
+            menu.addAction("Edit RELEASE", self.externalEdit)
             if hasattr(item.tree,"versions"):
                 if item.tree.version!=item.tree.versions[0][0]:
-                    menu.insertItem("SVN log", self.svn_log)
+                    menu.addAction("SVN log", self.svn_log)
                 self.context_methods = []
                 for version,path in [(v,p) for v,p in item.tree.versions \
                                      if v!=item.tree.version]:
                     self.context_methods.append(reverter(item.tree,self,path))
-                    menu.insertItem("Change to %s"%version, \
+                    menu.addAction("Change to %s"%version, \
                                     self.context_methods[-1].revert)
-            menu.exec_loop(pos)
+            menu.exec_(pos)
 
     def svn_log(self):
         """Do a dls-logs-since-release.py to find out the svn logs between the
@@ -118,7 +114,7 @@ class TreeView(QListView):
         (stdout, stderr) = p.communicate()
         text = stdout.strip()
         x = formLog(text,self)
-        x.setCaption("SVN Log: %s"%leaf.name)
+        x.setWindowTitle("SVN Log: %s"%leaf.name)
         x.show()        
 
     def externalEdit(self):
@@ -134,15 +130,15 @@ class TreeView(QListView):
                                         
     def mouseout(self):
         """Show hints in the statusBar on mouseout"""
-        self.top.statusBar().message("----- Hover over a module for its path, "\
+        self.top.statusBar.showMessage("----- Hover over a module for its path, "\
                                      "right click for a context menu -----")
                 
-    def mousein(self, item):
+    def mousein(self, item, col):
         """Show item path in the statusBar on mousein"""
         text = item.tree.name+" - current: "+item.tree.path
         if len(item.tree.updates())>1:
             text += ", latest: "+item.tree.updates()[-1]
-        self.top.statusBar().message(text)
+        self.top.statusBar.showMessage(text)
 
     def confirmWrite(self):
         """Popup a confimation box for writing changes to RELEASE"""
@@ -155,7 +151,7 @@ class TreeView(QListView):
     def printChanges(self):
         text = self.update.print_changes()
         x = formLog(text,self)
-        x.setCaption("RELEASE Changes")
+        x.setWindowTitle("RELEASE Changes")
         x.show() 
 
 class reverter:
@@ -176,25 +172,24 @@ class reverter:
         self.list_view.clashes=self.list_view.tree.clashes(print_warnings=False)
         build_gui_tree(self.list_view,self.list_view.tree)
 
-class formLog(QDialog):
+class formLog(QtGui.QDialog):
     """SVN log form"""
-    def __init__(self,text,parent = None,name = None,modal = 0,fl = 0):
+    def __init__(self,text,*args):
         """text = text to display in a readonly QTextEdit"""
-        QDialog.__init__(self,parent,name,modal,fl)
-        formLayout = QGridLayout(self,1,1,11,6,"formLayout")
-        self.scroll = QScrollView(self)        
-        self.lab = QTextEdit()
-        self.lab.setFont(QFont('monospace', 10))
+        QtGui.QDialog.__init__(self,*args)
+        formLayout = QtGui.QGridLayout(self)#,1,1,11,6,"formLayout")
+        self.scroll = QtGui.QScrollArea(self)        
+        self.lab = QtGui.QTextEdit()
+        self.lab.setFont(QtGui.QFont('monospace', 10))
         self.lab.setText(text)
         self.lab.setReadOnly(True)
-        self.scroll.addChild(self.lab)
-        self.scroll.setResizePolicy(QScrollView.AutoOneFit)
+        self.scroll.setWidget(self.lab)
+        self.scroll.setWidgetResizable(True)
         self.scroll.setMinimumWidth(700)        
         formLayout.addWidget(self.scroll,1,1)        
-        self.btnClose = QPushButton(self,"btnClose")
+        self.btnClose = QtGui.QPushButton("btnClose", self)
         formLayout.addWidget(self.btnClose,2,1)
-        self.clearWState(Qt.WState_Polished)
-        self.connect(self.btnClose,SIGNAL("clicked()"),self.close)
+        self.btnClose.clicked.connect(self.close)
         self.btnClose.setText("Close")
 
 def dependency_checker():
@@ -209,45 +204,52 @@ def dependency_checker():
     else:
         path = os.path.abspath(args[0])
         
-    app = QApplication([])
-    top = Form1()
+    app = QtGui.QApplication([])
+    top = Ui_Form1()
+    window = QtGui.QMainWindow()
+    top.setupUi(window)
+    top.statusBar = window.statusBar()
     tree = dependency_tree(None,path)
-    grid = QVBoxLayout(top.originalFrame)
-    grid.setAutoAdd(True)
     view = TreeView(tree,"original",top.originalFrame)
+    grid = QtGui.QGridLayout()
+    grid.addWidget(view)
+    top.originalFrame.setLayout(grid)    
     view.top = top
     view.mouseout()    
-    top.setCaption("Tree Browser - "+tree.name+": "+tree.version+", Epics:"+\
+    window.setWindowTitle("Tree Browser - "+tree.name+": "+tree.version+", Epics:"+\
                    tree.e.epicsVer())
     
     for loc in ["latest","consistent"]:
         def displayMessage(message):
             getattr(top,loc+"Write").setEnabled(False)
             getattr(top,loc+"Print").setEnabled(False)
-            label = QTextEdit(getattr(top,loc+"Frame"))
+            label = QtGui.QTextEdit(getattr(top,loc+"Frame"))
             label.setReadOnly(True)
             label.setText(loc.title() + " Updated Tree:\n\n" + message)
+            return label
+        grid = QtGui.QGridLayout()            
         try:
-            grid = QVBoxLayout(getattr(top,loc+"Frame"))
-            grid.setAutoAdd(True)        
             update = dependency_tree_update(tree,consistent=(loc=="consistent"))
             if not update.new_tree == tree:
                 view = TreeView(update.new_tree,loc,getattr(top,loc+"Frame"))
                 view.top = top
                 view.update = update
-                QObject.connect(getattr(top,loc+"Write"), SIGNAL("clicked()"),\
+                view.connect(getattr(top,loc+"Write"), SIGNAL("clicked()"),\
                                 view.confirmWrite)
-                QObject.connect(getattr(top,loc+"Print"), SIGNAL("clicked()"),\
+                view.connect(getattr(top,loc+"Print"), SIGNAL("clicked()"),\
                                 view.printChanges)        
+                grid.addWidget(view)                                
             else:
-                displayMessage("Updated tree is identical to Original tree")
+                grid.addWidget(displayMessage("Updated tree is identical to Original tree"))
+                
         except:
-                displayMessage("Error in tree update...\n\n"+traceback.format_exc())
-    top.show()
-    app.setMainWidget(top)
+            grid.addWidget(displayMessage("Error in tree update...\n\n"+traceback.format_exc()))
+        getattr(top,loc+"Frame").setLayout(grid)          
+                
+    window.show()
     # catch CTRL-C
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    app.exec_loop()
+    app.exec_()
                                                         
 if __name__ == "__main__":
     dependency_checker()

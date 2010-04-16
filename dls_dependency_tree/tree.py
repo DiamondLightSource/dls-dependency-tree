@@ -1,4 +1,4 @@
-#!/bin/env python2.4
+#!/bin/env dls-python2.6
 
 author = "Tom Cobb"
 usage = """%prog [options] <module_path>

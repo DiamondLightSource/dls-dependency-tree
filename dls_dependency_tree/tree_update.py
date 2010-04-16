@@ -1,4 +1,4 @@
-#!/bin/env python2.4
+#!/bin/env dls-python2.6
 
 import os, sys, shutil
 from tree import dependency_tree

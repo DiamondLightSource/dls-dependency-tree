@@ -1,20 +1,24 @@
-# Specify where we should build for testing
+# Specify defaults for testing
 PREFIX=/scratch/tools
+PYTHON=$(PREFIX)/bin/python2.6
 INSTALL_DIR=$(PREFIX)/lib/python2.6/site-packages
 SCRIPT_DIR=$(PREFIX)/bin
-PYTHON=$(PREFIX)/bin/dls-python2.6
-PYUIC=$(PREFIX)/bin/pyuic2.6
+MODULEVER=0.0
+
+# Override with any release info
+-include Makefile.private
 
 # uic files
+PYUIC=$(PREFIX)/bin/pyuic4
 UICS=$(patsubst %.ui, %_ui.py, $(wildcard dls_dependency_tree/*.ui))
 
 # build the screens from .ui source
 %_ui.py: %.ui
-	$(PYUIC) -o $@ -p0 $<$
+	$(PYUIC) -o $@ $<
 
 # This is run when we type make
 dist: setup.py $(wildcard dependency_tree/*) $(UICS)
-	$(PYTHON) setup.py bdist_egg
+	MODULEVER=$(MODULEVER) $(PYTHON) setup.py bdist_egg
 	touch dist
 
 # Clean the module
