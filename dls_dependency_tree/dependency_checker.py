@@ -121,12 +121,8 @@ class TreeView(QtGui.QTreeWidget):
         """Open the configure/RELEASE in gedit"""
         item = self.contextItem
         if item and os.path.isfile(item.tree.release()):
-            text = "gedit "+item.tree.release()
-            args = QStringList()
-            for a in text.split():
-                args.append(a)
-            proc = QProcess(args, self)
-            proc.launch("")
+            proc = QtCore.QProcess(self)            
+            proc.start("gedit",QtCore.QStringList(item.tree.release()))
                                         
     def mouseout(self):
         """Show hints in the statusBar on mouseout"""
