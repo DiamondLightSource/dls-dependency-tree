@@ -1,9 +1,17 @@
-html/index.html: config.src manual.src
-	mkdir -p html
-	cd html; dls-make-doxygen-documentation.py $^	
-	cd html; dls-python-documentation.py -t --src=../../dist/dls.dependency_tree-*.egg dls.dependency_tree	
-	
-all install: html/index.html
-			
-clean uninstall:
-	rm -rf html					
+# this is the doxygen output dir
+DOCDIR := doxygen
+
+# this is the doxygen executable
+DOXYGEN := /dls_sw/work/tools/RHEL5/bin/doxygen
+
+# add the documentation files to the install target
+all install: $(DOCDIR)
+
+# rule for documentation
+$(DOCDIR): config.cfg manual.src
+	mkdir -p $(DOCDIR)
+	$(DOXYGEN) config.cfg
+
+# Remove entire documentation/doxygen dir on clean
+clean:
+	rm -rf $(DOCDIR)

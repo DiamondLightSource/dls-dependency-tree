@@ -1,22 +1,22 @@
 /**
-\mainpage dls.dependency_tree Python Module
+\mainpage dls_dependency_tree Python Module
 \section intro_sec Introduction
 
-This module contains \ref src.tree.dependency_tree "dependency_tree", a python object the represents the tree formed by nested configure/RELEASE files. It also contains \ref src.tree.dependency_tree "dependency_tree", a python object  that knows how to update dependency_tree objects to their latest versions, and how to create consistent release sets. Finally it contains \ref dependency_checker.py "dls-dependency-checker.py", a gui tool for visualising and modifying these release trees.
+This module contains \ref dls_dependency_tree.tree.dependency_tree "dependency_tree", a python object the represents the tree formed by nested configure/RELEASE files. It also contains \ref dls_dependency_tree.tree_update.dependency_tree_update "dependency_update", a python object  that knows how to update dependency_tree objects to their latest versions, and how to create consistent release sets. Finally it contains \ref dependency_checker.py "dls-dependency-checker.py", a gui tool for visualising and modifying these release trees.
 
 \section Dependencies
 
-This module depends on the dls.environment module, and a version of <a href="http://www.riverbankcomputing.com/software/pyqt/download3">PyQt3</a>
+This module depends on the dls_environment module, and a version of <a href="http://www.riverbankcomputing.com/software/pyqt/download">PyQt4</a>
 
 \section Usage
 
-It may be useful to use the \ref src.tree.dependency_tree "dependency_tree" object when trying to work out what versions of modules are currently in use in large numbers of IOCs, etc. You can use it in this way:
+It may be useful to use the \ref dls_dependency_tree.tree.dependency_tree "dependency_tree" object when trying to work out what versions of modules are currently in use in large numbers of IOCs, etc. You can use it in this way:
 
 \code
 # import the egg
 from pkg_resources import require
-require("dls.dependency_tree==1.9")
-from dls.dependency_tree import dependency_tree
+require("dls_dependency_tree")
+from dls_dependency_tree import dependency_tree
 # create a tree from the motor module
 tree = dependency_tree(None,"/dls_sw/prod/R3.14.8.2/support/motor/6-3dls1")
 # find all the db files and template files in all modules in the tree
@@ -32,9 +32,6 @@ Apart from this, usage is likely to be via the \ref dependency_checker.py "dls-d
 
 \section Scripts
 
-When the module is installed, it creates a script \ref dependency_checker.py "dls-dependency-checker.py" for visualising configure/RELEASE trees. You can either run this script in the module root of the module you want to check for dependencies, or pass it an argument to the module root directory. For more usage instructions, run the script with a -h, or see the \ref src.dependency_checker.usage "usage text"
-
-\section Pydoc
-The doxygen documentation is a good starting point, but the <a href="dls.dependency_tree.html">Pydoc html pages</a> are included for reference
+When the module is installed, it creates a script \ref dependency_checker.py "dls-dependency-checker.py" for visualising configure/RELEASE trees. You can either run this script in the module root of the module you want to check for dependencies, or pass it an argument to the module root directory. For more usage instructions, run the script with a -h, or see the \ref dls_dependency_tree::dependency_checker.usage "usage text"
 
 **/

@@ -20,12 +20,14 @@ UICS=$(patsubst %.ui, %_ui.py, $(wildcard dls_dependency_tree/*.ui))
 dist: setup.py $(wildcard dependency_tree/*) $(UICS)
 	MODULEVER=$(MODULEVER) $(PYTHON) setup.py bdist_egg
 	touch dist
+	$(MAKE) -C documentation
 
 # Clean the module
 clean:
 	$(PYTHON) setup.py clean
 	-rm -rf build dist *egg-info $(UICS) installed.files 
 	-find -name '*.pyc' -exec rm {} \;
+	$(MAKE) -C documentation clean	
 
 # Install the built egg
 install: dist
