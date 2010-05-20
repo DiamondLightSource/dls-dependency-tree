@@ -99,6 +99,14 @@ class dependency_tree:
         """Initialise self.name and self.version from self.path using the site
         environment settings"""
         self.name, self.version = self.e.classifyPath(self.path)
+        # If we are in an etc/makeIocs dir, use the symbols from the module
+        # configure/RELEASE       
+        if os.path.abspath(os.path.join(self.release(), '..', '..')).endswith("etc"):                    
+            release = os.path.join(
+                self._release, '..', '..', '..', 'configure', 'RELEASE')
+            if os.path.isfile(release):
+                tree = dependency_tree(None, release, warnings=False)
+                self.modules.update(tree.modules)
 
     def __possible_paths(self):
         """Return a list of all possible module paths for self. These are listed
