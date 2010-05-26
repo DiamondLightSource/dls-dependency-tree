@@ -100,10 +100,10 @@ class dependency_tree:
         environment settings"""
         self.name, self.version = self.e.classifyPath(self.path)
         # If we are in an etc/makeIocs dir, use the symbols from the module
-        # configure/RELEASE       
-        if os.path.abspath(os.path.join(self.release(), '..', '..')).endswith("etc"):                    
-            release = os.path.join(
-                self._release, '..', '..', '..', 'configure', 'RELEASE')
+        # configure/RELEASE   
+        if os.path.abspath(os.path.join(self.release(), '..', '..')).endswith("etc"):
+            release = os.path.abspath(os.path.join(
+                self.release(), '..', '..', '..', 'configure', 'RELEASE'))
             if os.path.isfile(release):
                 tree = dependency_tree(None, release, warnings=False)
                 self.modules.update(tree.modules)

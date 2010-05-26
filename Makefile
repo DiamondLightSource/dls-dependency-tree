@@ -17,7 +17,7 @@ UICS=$(patsubst %.ui, %_ui.py, $(wildcard dls_dependency_tree/*.ui))
 	$(PYUIC) -o $@ $<
 
 # This is run when we type make
-dist: setup.py $(wildcard dependency_tree/*) $(UICS)
+dist: setup.py $(wildcard dls_dependency_tree/*) $(UICS)
 	MODULEVER=$(MODULEVER) $(PYTHON) setup.py bdist_egg
 	touch dist
 	$(MAKE) -C documentation
