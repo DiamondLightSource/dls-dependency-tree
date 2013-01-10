@@ -1,15 +1,13 @@
 # Specify defaults for testing
-PREFIX=/scratch/tools
-PYTHON=$(PREFIX)/bin/python2.6
-INSTALL_DIR=$(PREFIX)/lib/python2.6/site-packages
-SCRIPT_DIR=$(PREFIX)/bin
+PREFIX=$(PWD)/prefix
+PYTHON=dls-python
 MODULEVER=0.0
 
 # Override with any release info
 -include Makefile.private
 
 # uic files
-PYUIC=$(PREFIX)/bin/pyuic4
+PYUIC=pyuic4
 UICS=$(patsubst %.ui, %_ui.py, $(wildcard dls_dependency_tree/*.ui))
 
 # build the screens from .ui source
@@ -33,6 +31,5 @@ clean:
 install: dist
 	$(PYTHON) setup.py easy_install -m \
 		--record=installed.files \
-		--install-dir=$(INSTALL_DIR) \
-		--script-dir=$(SCRIPT_DIR) dist/*.egg
-		
+		--prefix=$(PREFIX) dist/*.egg
+
