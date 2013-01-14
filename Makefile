@@ -1,13 +1,13 @@
 # Specify defaults for testing
-PREFIX=$(PWD)/prefix
-PYTHON=dls-python
+PREFIX := $(shell pwd)/prefix
+PYTHON = dls-python
 MODULEVER=0.0
 
 # Override with any release info
 -include Makefile.private
 
 # uic files
-PYUIC=pyuic4
+PYUIC = pyuic4
 UICS=$(patsubst %.ui, %_ui.py, $(wildcard dls_dependency_tree/*.ui))
 
 # build the screens from .ui source
