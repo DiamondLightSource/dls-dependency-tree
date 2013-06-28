@@ -1,6 +1,6 @@
 #!/bin/env dls-python2.6
 
-import os, sys, shutil
+import os, sys, shutil, copy
 from tree import dependency_tree
                         
 class dependency_tree_update:
@@ -13,7 +13,7 @@ class dependency_tree_update:
     # new_tree: updated dependency_tree
 
     
-    def __init__(self,tree,consistent=True):
+    def __init__(self,tree,consistent=True,update=True):
         """Take a dependency_tree and update every module to its latest version. 
         If consistent is True, it then roll back versions of the updated modules 
         until they form a consistent set"""
@@ -33,7 +33,9 @@ class dependency_tree_update:
         else:
             self.errorMsg = "Algorithm fails if too many modules are in work"
         # update to latest version
-        self.update_tree()
+        self.find_latest()
+        if update:
+            self.update_tree()
         if consistent:
             # try to make a consistent set
             self.make_consistent()
@@ -62,8 +64,8 @@ class dependency_tree_update:
         file.writelines(self.new_tree.lines)
         file.close()
         print "Changes written to:",release
-        
-    def update_tree(self):
+
+    def find_latest(self):
         """Update new_tree to latest versions of everything"""
         self.new_tree = self.old_tree.copy()
         self.differences = {}
@@ -73,14 +75,20 @@ class dependency_tree_update:
             if len(leaf_updates)>1:
                 # if there are updates available, add
                 self.differences[leaf.name]=leaf_updates
-                new_leaf = dependency_tree(self.new_tree,leaf_updates[-1])
                 dummy = dependency_tree(None)
-                new_leaf.versions = []
+                leaf.versions = []
                 for path in leaf_updates:
                     dummy.path = path
                     dummy.init_version()
-                    new_leaf.versions.append((dummy.version,path))
-                self.new_tree.replace_leaf( leaf, new_leaf )
+                    leaf.versions.append((dummy.version,path))
+                            
+    def update_tree(self):
+        """Update new_tree to latest versions of everything"""
+        for leaf in self.new_tree.leaves:
+            if leaf.name in self.differences:
+                new_leaf = dependency_tree(leaf.parent,self.differences[leaf.name][-1])
+                new_leaf.versions = leaf.versions
+                self.new_tree.replace_leaf(leaf,new_leaf)        
                 
     def make_consistent(self):
         """Roll back the changes we made in update_tree() until it is 

@@ -1,4 +1,4 @@
-#!/bin/env dls-python2.6
+#!/bin/env dls-python
 
 author = "Tom Cobb"
 usage = """%prog [<module_path>]
@@ -16,6 +16,11 @@ configure/RELEASE, or the changes printed on the commandline."""
 import os, sys, signal, string, new, traceback
 from optparse import OptionParser
 from PyQt4 import QtCore, QtGui
+
+if __name__ == "__main__":
+    sys.path.append("/home/tmc43/common/python/dls_environment")
+
+
 from tree import dependency_tree
 from tree_update import dependency_tree_update
 from dependency_checker_ui import Ui_Form1
@@ -206,16 +211,10 @@ def dependency_checker():
     top.setupUi(window)
     top.statusBar = window.statusBar()
     tree = dependency_tree(None,path)
-    view = TreeView(tree,"original",top.originalFrame)
-    grid = QtGui.QGridLayout()
-    grid.addWidget(view)
-    top.originalFrame.setLayout(grid)    
-    view.top = top
-    view.mouseout()    
     window.setWindowTitle("Tree Browser - "+tree.name+": "+tree.version+", Epics:"+\
                    tree.e.epicsVer())
     
-    for loc in ["latest","consistent"]:
+    for loc in ["original","latest","consistent"]:
         def displayMessage(message):
             getattr(top,loc+"Write").setEnabled(False)
             getattr(top,loc+"Print").setEnabled(False)
@@ -225,8 +224,8 @@ def dependency_checker():
             return label
         grid = QtGui.QGridLayout()            
         try:
-            update = dependency_tree_update(tree,consistent=(loc=="consistent"))
-            if not update.new_tree == tree:
+            update = dependency_tree_update(tree,consistent=(loc=="consistent"),update=(loc!="original"))
+            if loc=="original" or not update.new_tree == tree:
                 view = TreeView(update.new_tree,loc,getattr(top,loc+"Frame"))
                 view.top = top
                 view.update = update
@@ -234,7 +233,7 @@ def dependency_checker():
                                 view.confirmWrite)
                 view.connect(getattr(top,loc+"Print"), SIGNAL("clicked()"),\
                                 view.printChanges)        
-                grid.addWidget(view)                                
+                grid.addWidget(view)                                            
             else:
                 grid.addWidget(displayMessage("Updated tree is identical to Original tree"))
                 

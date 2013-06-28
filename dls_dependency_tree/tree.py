@@ -13,16 +13,14 @@ will appear in the output list of paths"""
 
 import os, sys, shutil, re, glob
 from optparse import OptionParser
+from dls_environment import environment
 
 class dependency_tree:
-    """A class for parsing configure/RELEASE for module names and versions"""
-    ## Macro names that we don't want to appear in our release tree
-    ignore_list = ["TEMPLATE_TOP","EPICS_BASE","PYTHONPATH","EPICS_RELEASE",\
-                   "EPICS_EXTENSIONS"]
-    ## Module names with no configure/RELEASE file
-    no_release = ["superTop"]       
+    """A class for parsing configure/RELEASE for module names and versions"""    
     
-    def __init__(self,parent=None,module_path=None,includes=True,warnings=True):
+    ignore_list = ["TEMPLATE_TOP", "EPICS_BASE"]
+    
+    def __init__(self,parent=None,module_path=None,includes=True,warnings=True,hostarch=None):
         """Initialise the object
         
         Arguments:
@@ -36,17 +34,20 @@ class dependency_tree:
         """
         # setup variables to defaults
         self.module_path = module_path
-        self.parent=parent        
+        self.parent = parent        
         self.includes = includes
         self.warnings = warnings
         self._release = None
-        self.reinit()
-    
-    def reinit(self):
-        """Re-initialise the object."""
-        from dls_environment import environment
+        ## this is the epics host arch
+        if hostarch:
+            self.hostarch = hostarch
+        else:
+            self.hostarch = os.environ.get("EPICS_HOST_ARCH", "linux-x86_64")        
         ## dls.environment object for getting paths and release order
-        self.e = environment()
+        if self.parent:
+            self.e = self.parent.e.copy()
+        else:
+            self.e = environment()
         ## list of child dependency_tree leaves of this modules
         self.leaves=[]
         ## path to module root (like /dls_sw/work/R3.14.8.2/support/motor)
@@ -57,22 +58,26 @@ class dependency_tree:
         self.version = ""
         ## dict of fully substituted macros 
         ## (like macros["SUPPORT"]="/dls_sw/prod/R3.14.8.2/support")
-        self.macros={}
+        self.macros={"TOP":"."}
+        self.macro_order = []
         ## stored lines of the RELEASE file. Updated as changes are written
         self.lines = []
+        self.extra_lines = []
         if self.module_path:
             # import a configure RELEASE
             self.process_module(self.module_path)        
-                    
+            
     def copy(self):
         """Return a copy of this dependency_tree object"""
-        new_tree = dependency_tree(self.parent,warnings=self.warnings)
+        new_tree = dependency_tree(self.parent,includes=self.includes,warnings=self.warnings,hostarch=self.hostarch)
         new_tree.e = self.e.copy()
         new_tree.path = self.path
         new_tree.name = self.name
         new_tree.version = self.version
         new_tree.macros = self.macros.copy()
+        new_tree.macro_order = self.macro_order[:]
         new_tree.lines = self.lines[:]
+        new_tree.extra_lines = self.extra_lines[:]
         for leaf in self.leaves:
             new_leaf = leaf.copy()
             new_leaf.parent = new_tree
@@ -99,14 +104,6 @@ class dependency_tree:
         """Initialise self.name and self.version from self.path using the site
         environment settings"""
         self.name, self.version = self.e.classifyPath(self.path)
-        # If we are in an etc/makeIocs dir, use the symbols from the module
-        # configure/RELEASE   
-        if os.path.abspath(os.path.join(self.release(), '..', '..')).endswith("etc"):
-            release = os.path.abspath(os.path.join(
-                self.release(), '..', '..', '..', 'configure', 'RELEASE'))
-            if os.path.isfile(release):
-                tree = dependency_tree(None, release, warnings=False)
-                self.modules.update(tree.modules)
 
     def __possible_paths(self):
         """Return a list of all possible module paths for self. These are listed
@@ -117,7 +114,7 @@ class dependency_tree:
             prefix = self.e.prodArea("support")
         prefix = os.path.join(prefix,self.name)
         if os.path.isdir(prefix):
-            paths = [os.path.join(prefix,x) for x in os.listdir(prefix)]
+            paths = [os.path.join(prefix,x) for x in os.listdir(prefix) if ".tar.gz" not in x]
         else:
             paths = []
         if self.path not in paths:
@@ -126,25 +123,24 @@ class dependency_tree:
         return self.e.sortReleases(paths)
 
 
-    def __substitute_macros(self,modules):
-        """Substitute macros in modules according to self.macros. modules is a 
-        dict of the format modules[name]=path. This function returns the dict
-        with all macro values substituted."""
+    def __substitute_macros(self, dict):
+        """Substitute macros in dict."""
         retries = 5
         while retries>0:
             unsubbed_macros = []
             macro_re = re.compile(r"\$\(([^\)]+)\)")
-            for macro in modules.keys():
-                for find in macro_re.findall(modules[macro]):
+            for macro in dict:
+                #print "m", macro
+                for find in macro_re.findall(dict[macro]):
                     # find all unsubstituted macros, and replace them with their
                     # substitutions
                     if find in self.macros.keys():
-                        modules[macro]=modules[macro].replace("$("+find+")",\
+                        dict[macro]=dict[macro].replace("$("+find+")",\
                                                               self.macros[find])
                     else:
-                        modules[macro]=modules[macro].replace("$("+find+")","")
+                        dict[macro]=dict[macro].replace("$("+find+")","")
             retries-=1
-        return modules
+        return dict
 
     def __process_line(self,line):
         """Process a line of configure/RELEASE after comments have been 
@@ -157,40 +153,28 @@ class dependency_tree:
             if list[0] == "EPICS_BASE" and match:
                 # if epics version is defined, set it in the environment
                 self.e.setEpics( match.group() )
-            else:
-                # otherwise, define it in the module dictionary
-                assert not self.modules.has_key(list[0]), "Macro: "+list[0]+\
-                    " defined multiple times in "+self.path
-                self.modules[list[0]]=list[1]
-                self.module_order.append(list[0])        
+            # otherwise, define it in the module dictionary
+            self.macros[list[0]]=list[1]
+            self.macro_order.append(list[0])        
 
     def process_module(self,module_path):
         """Process the configure/RELEASE file and populate the tree from it.
         module_path is the path to configure/RELEASE """
-        # define some initial values
-        ## Very similar to \ref macros, but only modules are listed
-        self.modules = {"TOP":"."}
-        ## The order that the modules were declared in RELEASE
-        self.module_order = []
-
-        # list of definitions that are not support modules
-        ignore_list = self.ignore_list
-        
-        # list of module_names without a RELEASE file
-        no_release = self.no_release
-
         # set the path
-        self.path=os.path.abspath(os.path.expanduser(module_path.rstrip("/\n\r")))
+        self.path=os.path.abspath(module_path.rstrip("/\n\r"))
 
         # if the path ends in RELEASE, then use this as the RELEASE file
         # if RELEASE does not exist, make this a dummy module
         if self.path.endswith("RELEASE"):
             self._release = self.path
             self.path = '/'.join(self.path.split("/")[:-2])
+            
+        # then set the name and version of the tree
+        self.init_version()            
+            
         if not os.path.isfile(self.release()):
-            self.init_version()
-            if self.name in no_release and os.path.isdir(self.path):
-                # this module has no release file, but is to be treated as valid
+            if os.path.isdir(self.path):
+                # this module has no release file
                 return
             else:
                 self.version="invalid"
@@ -200,17 +184,29 @@ class dependency_tree:
                 return
             
         # read in RELEASE
-        input = open(self.release(),"r")
-        self.lines = input.readlines()
-        input.close()
+        self.lines = open(self.release()).readlines()
+
+        self.extra_lines = []
+        extra_files = []
+        # if we are in an iocbuilder RELEASE file then include 
+        # If we are in an etc/makeIocs dir, use the symbols from the module
+        # configure/RELEASE                   
+        if os.path.abspath(os.path.join(self.release(), '..', '..')).endswith("etc"):
+            extra_files.append(os.path.abspath(os.path.join(
+                self.release(), '..', '..', '..', 'configure', 'RELEASE')))
+        # Check for RELEASE.$(EPICS_HOST_ARCH).Common files
+        extra_files.append("%s.%s.Common" %(self.release(),self.hostarch))
+        for r in extra_files:
+            if os.path.isfile(r):                
+                self.extra_lines += open(r).readlines()
 
         # store current working directory then go to module base
         cwd = os.getcwd()
         os.chdir(self.path)
 
-        # for each line in the RELEASE file, populate the modules dictionary if 
+        # for each line in the RELEASE file, populate the macros dictionary if 
         # it defines a support module
-        for line in self.lines:
+        for line in self.lines + self.extra_lines:
             # strip comments
             line = line.split("#")[0]
             # check if the line contains "include" but not "-include". This will
@@ -218,8 +214,8 @@ class dependency_tree:
             if "include" in line[:8]:
                 if self.includes:
                     fname = line.split(" ")[1].rstrip()
-                    for module in self.modules:
-                        fname = fname.replace("$("+module+")",self.modules[module])                  
+                    for module in self.macros:
+                        fname = fname.replace("$("+module+")",self.macros[module])                  
                     try:
                         for line in open(fname,"r").readlines():
                             self.__process_line(line)
@@ -228,46 +224,42 @@ class dependency_tree:
             else:
                 self.__process_line(line)
         
-        # we now have our RELEASE file as a macro dict, so store this
-        self.macros = self.modules
-        
-        # then set the name and version of the tree
-        self.init_version()
-
         # do some error checking
         if self.parent and self.name==self.parent.name:
             # module refers to itself, probably for an example app. ignore it"
             return
 
         # now try and substitute macros
-        self.__substitute_macros(self.modules)
+        self.macros = self.__substitute_macros(self.macros)
 
         # remove any modules we know to be wrong and make trees from the rest of
         # them
-        for module in self.module_order:
-            if module=="TOP" or self.modules[module]==".":
+        for module in self.macro_order:
+            if module=="TOP" or self.macros[module]==".":
                 # ignore TOP and any module that refers to itself explicitly
                 pass
-            elif self.modules[module].upper() in ["YES","NO","TRUE","FALSE"]:
+            elif self.macros[module].upper() in ["YES","NO","TRUE","FALSE"]:
                 # ignore flags
                 pass
-            elif "python" in self.modules[module]:
+            elif "python" in self.macros[module]:
                 # ignore python as it has its own build system
                 pass
-            elif self.modules[module] in [self.e.devArea("support"),\
+            elif self.macros[module] in [self.e.devArea("support"),\
                                           self.e.devArea("ioc")]:
                 # ignore macros defining the development areas
                 pass
-            elif self.modules[module] in [self.e.prodArea("support"),\
+            elif self.macros[module] in [self.e.prodArea("support"),\
                                           self.e.prodArea("ioc")]:
                 # ignore macros defining the production areas
                 pass
-                        
-            elif module not in ignore_list:
+            elif self.macros[module] == "":
+                # ignore empty macros
+                pass                        
+            elif module not in self.ignore_list:
                 # module is probably valid
                 # so make a tree from it and add it to leaves
                 new_leaf = dependency_tree(parent=self,\
-                    module_path=self.modules[module],warnings=self.warnings)
+                    module_path=self.macros[module],includes=self.includes,warnings=self.warnings,hostarch=self.hostarch)
                 self.leaves.append(new_leaf)
                 
         # go back to initial place and return the values
@@ -380,37 +372,35 @@ class dependency_tree:
         """Replace leaf with new_leaf. Update self.lines accordingly"""
         assert leaf in self.leaves, \
             "Module not listed in this tree, can't replace it: "+leaf.path
-        self.leaves[self.leaves.index(leaf)]=new_leaf
-        # expand home dir
-        home = os.path.expanduser("~")
-        if leaf.path.startswith(home):
-            leaf_path = "~" + leaf.path[len(home):]
-        else:
-            leaf_path = leaf.path
-        if new_leaf.path.startswith(home):
-            new_leaf_path = "~" + new_leaf.path[len(home):]
-        else:
-            new_leaf_path = new_leaf.path          
+        leaf_path = leaf.path
+        new_leaf_path = new_leaf.path
         # find the macro so that its substitution = leaf.path            
         for macro in self.macros.keys():
             if self.macros[macro]==leaf_path:
                 break
         # find the line in RELEASE that refers to it
-        for i,line in enumerate(self.lines):
-            line = line.split("#")[0]
-            if "=" in line:
-                list = [x.strip() for x in line.split("=")]
-                if macro == list[0]:
-                    break
+        found = None
+        for lines in [self.extra_lines, self.lines]:
+            for i,line in reversed(list(enumerate(lines))):
+                line = line.split("#")[0]
+                if "=" in line:
+                    l = [x.strip() for x in line.split("=")]
+                    if macro == l[0]:
+                        found = lines
+                        break
+        if found != self.lines:
+            print "Cannot update %s as macro %s is not defined in it" %(self.release(), macro)
+            return
         # replace macros in that line
         dict = {}
-        dict[list[0]] = list[1]
-        new_line = line.replace(list[1],self.__substitute_macros(dict)[list[0]])          
+        dict[l[0]] = l[1]
+        new_line = line.replace(l[1],self.__substitute_macros(dict)[l[0]])          
         # now replace the old leaf path for the new leaf path
         if leaf_path not in new_line:
             print >> sys.stderr, "Module path: "+leaf_path+\
                                  " should be in this line: "+new_line
             return
+        self.leaves[self.leaves.index(leaf)]=new_leaf                    
         new_line = new_line.replace(leaf_path,new_leaf_path)
         # now put macros back in and set the new line in RELEASE
         self.lines[i]=self.replace_macros(new_line,[macro])
@@ -419,8 +409,9 @@ class dependency_tree:
     def replace_macros(self,line,exclude_list=[]):
         rev_macros = {}
         for key in set(self.macros)-set(["TOP"]+exclude_list):
-            rev_macros[self.macros[key]]="$("+key+")"
-        sub_list = reversed(sorted(rev_macros.keys()))
+            if self.macros[key]:
+                rev_macros[self.macros[key]]="$("+key+")"
+        sub_list = sorted(rev_macros.keys(), key=len, reverse=True)
         for sub in sub_list:
             line = line.replace(sub,rev_macros[sub])
         return line
