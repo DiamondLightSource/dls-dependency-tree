@@ -199,7 +199,7 @@ class dependency_tree:
         for r in extra_files:
             if os.path.isfile(r):                
                 self.extra_lines += open(r).readlines()
-
+        
         # store current working directory then go to module base
         cwd = os.getcwd()
         os.chdir(self.path)

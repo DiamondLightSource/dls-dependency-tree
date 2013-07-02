@@ -11,7 +11,7 @@ setup(
     version = version,
     packages = ["dls_dependency_tree"],
     # define console_scripts to be 
-    install_requires = [ "dls_environment == 4.5" ],
+    install_requires = [ "dls_environment == 4.6" ],
     entry_points = {'console_scripts': \
                     ['dls-dependency-checker.py = dls_dependency_tree.dependency_checker:dependency_checker']},
 #    include_package_data = True,

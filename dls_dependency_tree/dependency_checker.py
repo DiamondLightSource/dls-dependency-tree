@@ -18,8 +18,8 @@ from optparse import OptionParser
 from PyQt4 import QtCore, QtGui
 
 if __name__ == "__main__":
-    sys.path.append("/home/tmc43/common/python/dls_environment")
-
+    sys.path.append(os.path.abspath(os.path.join(
+        os.path.realpath(__file__), '..', '..', '..', 'dls_environment')))
 
 from tree import dependency_tree
 from tree_update import dependency_tree_update
