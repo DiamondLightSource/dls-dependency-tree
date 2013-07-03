@@ -104,6 +104,7 @@ class dependency_tree:
         """Initialise self.name and self.version from self.path using the site
         environment settings"""
         self.name, self.version = self.e.classifyPath(self.path)
+        # print self.path, self.e.classifyPath(self.path)
 
     def __possible_paths(self):
         """Return a list of all possible module paths for self. These are listed
@@ -268,7 +269,8 @@ class dependency_tree:
                 # so make a tree from it and add it to leaves
                 new_leaf = dependency_tree(parent=self,\
                     module_path=self.macros[module],includes=self.includes,warnings=self.warnings,hostarch=self.hostarch)
-                self.leaves.append(new_leaf)
+                if new_leaf.name:
+                    self.leaves.append(new_leaf)
                 
         # go back to initial place and return the values
         os.chdir(cwd)
