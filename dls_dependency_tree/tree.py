@@ -153,6 +153,7 @@ class dependency_tree:
             if list[0] == "EPICS_BASE" and match:
                 # if epics version is defined, set it in the environment
                 self.e.setEpics( match.group() )
+                #print "Set epics", match.group(), self.name
             # otherwise, define it in the module dictionary
             self.macros[list[0]]=list[1]
             self.macro_order.append(list[0])        
@@ -186,19 +187,24 @@ class dependency_tree:
         # read in RELEASE
         self.lines = open(self.release()).readlines()
 
-        self.extra_lines = []
-        extra_files = []
+        pre_lines = []
+        post_lines = []        
+        
         # if we are in an iocbuilder RELEASE file then include 
         # If we are in an etc/makeIocs dir, use the symbols from the module
         # configure/RELEASE                   
         if os.path.abspath(os.path.join(self.release(), '..', '..')).endswith("etc"):
-            extra_files.append(os.path.abspath(os.path.join(
-                self.release(), '..', '..', '..', 'configure', 'RELEASE')))
+            r = os.path.abspath(os.path.join(
+                self.release(), '..', '..', '..', 'configure', 'RELEASE'))
+            if os.path.isfile(r):
+                pre_lines += open(r).readlines()
+                
         # Check for RELEASE.$(EPICS_HOST_ARCH).Common files
-        extra_files.append("%s.%s.Common" %(self.release(),self.hostarch))
-        for r in extra_files:
-            if os.path.isfile(r):                
-                self.extra_lines += open(r).readlines()
+        # Note that this loads <ioc>_RELEASE.$(EPICS_HOST_ARCH).Common for
+        # builder modules, probably not correct
+        r = "%s.%s.Common" %(self.release(),self.hostarch)
+        if os.path.isfile(r):                
+            post_lines += open(r).readlines()
         
         # store current working directory then go to module base
         cwd = os.getcwd()
@@ -206,7 +212,7 @@ class dependency_tree:
 
         # for each line in the RELEASE file, populate the macros dictionary if 
         # it defines a support module
-        for line in self.lines + self.extra_lines:
+        for line in pre_lines + self.lines + post_lines:
             # strip comments
             line = line.split("#")[0]
             # check if the line contains "include" but not "-include". This will
@@ -223,6 +229,8 @@ class dependency_tree:
                         pass
             else:
                 self.__process_line(line)
+
+        self.extra_lines = pre_lines + post_lines
         
         # do some error checking
         if self.parent and self.name==self.parent.name:
