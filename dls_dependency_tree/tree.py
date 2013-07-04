@@ -193,17 +193,16 @@ class dependency_tree:
         
         # if we are in an iocbuilder RELEASE file then include 
         # If we are in an etc/makeIocs dir, use the symbols from the module
-        # configure/RELEASE                   
-        if os.path.abspath(os.path.join(self.release(), '..', '..')).endswith("etc"):
+        # configure/RELEASE      
+        r = self.release()             
+        if os.path.abspath(os.path.join(r, '..', '..')).endswith("etc"):
             r = os.path.abspath(os.path.join(
                 self.release(), '..', '..', '..', 'configure', 'RELEASE'))
             if os.path.isfile(r):
                 pre_lines += open(r).readlines()
                 
         # Check for RELEASE.$(EPICS_HOST_ARCH).Common files
-        # Note that this loads <ioc>_RELEASE.$(EPICS_HOST_ARCH).Common for
-        # builder modules, probably not correct
-        r = "%s.%s.Common" %(self.release(),self.hostarch)
+        r = "%s.%s.Common" %(r,self.hostarch)
         if os.path.isfile(r):                
             post_lines += open(r).readlines()
         
@@ -358,7 +357,7 @@ class dependency_tree:
 
     def print_tree(self,spaces=0):
         """Print an ascii art text representation of self"""
-        print " |"*spaces+"-"+self.name+": "+self.version
+        print " |"*spaces+"-"+self.name+": "+self.version+" (%s)" % self.path
         for leaf in self.leaves:
             leaf.print_tree(spaces+1)
 
