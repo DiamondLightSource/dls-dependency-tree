@@ -202,8 +202,10 @@ class dependency_tree:
                 pre_lines += open(r).readlines()
                 
         # Check for RELEASE.$(EPICS_HOST_ARCH).Common files
-        r = "%s.%s.Common" %(r,self.hostarch)
-        if os.path.isfile(r):                
+        r = "%s.%s" %(r,self.hostarch)
+        if os.path.isfile(r + ".Common"):                
+            post_lines += open(r + ".Common").readlines()
+        elif os.path.isfile(r):                
             post_lines += open(r).readlines()
         
         # store current working directory then go to module base
