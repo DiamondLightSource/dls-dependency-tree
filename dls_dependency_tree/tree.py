@@ -1,4 +1,4 @@
-#!/bin/env dls-python2.6
+#!/bin/env dls-python
 
 author = "Tom Cobb"
 usage = """%prog [options] <module_path>
@@ -129,17 +129,26 @@ class dependency_tree:
         retries = 5
         while retries>0:
             unsubbed_macros = []
-            macro_re = re.compile(r"\$\(([^\)]+)\)")
+            bracket_re = re.compile(r"\$\(([^\)]+)\)")
+            brace_re   = re.compile(r"\$\{([^\)]+)\}")
+            open_re    = re.compile(r"\$([a-zA-Z_][a-zA-Z0-9_]*)")
             for macro in dict:
                 #print "m", macro
-                for find in macro_re.findall(dict[macro]):
+                for find in bracket_re.findall(dict[macro])+\
+                        brace_re.findall(dict[macro])+open_re.findall(dict[macro]):
                     # find all unsubstituted macros, and replace them with their
                     # substitutions
                     if find in self.macros.keys():
                         dict[macro]=dict[macro].replace("$("+find+")",\
                                                               self.macros[find])
+                        dict[macro]=dict[macro].replace("${"+find+"}",\
+                                                              self.macros[find])
+                        dict[macro]=dict[macro].replace("$"+find,\
+                                                              self.macros[find])
                     else:
                         dict[macro]=dict[macro].replace("$("+find+")","")
+                        dict[macro]=dict[macro].replace("${"+find+"}","")
+                        dict[macro]=dict[macro].replace("$"+find,"")
             retries-=1
         return dict
 
@@ -164,6 +173,10 @@ class dependency_tree:
         module_path is the path to configure/RELEASE """
         # set the path
         self.path=os.path.abspath(module_path.rstrip("/\n\r"))
+
+        # Tools and python modules might have their paths passed with a "prefix" suffix.
+        if os.path.basename(self.path) == "prefix":
+            self.path = os.path.dirname(self.path)
 
         # if the path ends in RELEASE, then use this as the RELEASE file
         # if RELEASE does not exist, make this a dummy module
