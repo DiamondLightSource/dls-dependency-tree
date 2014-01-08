@@ -87,7 +87,7 @@ class dependency_tree:
     def __repr__(self):
         """Override the repr method so that "print dependency_tree" gives a 
         useful output"""
-        return "<dependency_tree - "+self.name+": "+self.version+">"
+        return "<dependency_tree - %s: %s>" % (self.name, self.version)
 
     def __eq__(self,tree):
         """Override the == method so it checks for name, version, and equality
@@ -109,6 +109,8 @@ class dependency_tree:
     def __possible_paths(self):
         """Return a list of all possible module paths for self. These are listed
         in ascending order."""
+        #if self.name is None:
+        #    return [self.path]
         if "ioc" in self.path:
             prefix = self.e.prodArea("ioc")
         else:
@@ -194,8 +196,8 @@ class dependency_tree:
             else:
                 self.version="invalid"
                 if self.warnings:
-                    print >> sys.stderr, "***Warning: can't find module: "+\
-                        self.name+" with RELEASE file: "+self.release()
+                    print >> sys.stderr, "***Warning: can't find module: %s " \
+                        "with RELEASE file: %s " %(self.name, self.release())
                 return
             
         # read in RELEASE
@@ -372,7 +374,7 @@ class dependency_tree:
 
     def print_tree(self,spaces=0):
         """Print an ascii art text representation of self"""
-        print " |"*spaces+"-"+self.name+": "+self.version+" (%s)" % self.path
+        print " |"*spaces+"-%s: %s (%s)" %(self.name, self.version, self.path)
         for leaf in self.leaves:
             leaf.print_tree(spaces+1)
 
@@ -437,7 +439,9 @@ class dependency_tree:
                 rev_macros[self.macros[key]]="$("+key+")"
         sub_list = sorted(rev_macros.keys(), key=len, reverse=True)
         for sub in sub_list:
-            line = line.replace(sub,rev_macros[sub])
+            path = line.split("#")[0].split("=")[-1].strip()
+            if sub != path and sub == path[:len(sub)]:
+                line = line.replace(sub,rev_macros[sub])
         return line
         
 def cl_dependency_tree():

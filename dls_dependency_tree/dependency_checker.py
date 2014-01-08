@@ -37,7 +37,7 @@ def build_gui_tree(list_view,tree,parent=None):
     else:
         child = QtGui.QTreeWidgetItem(list_view)
         list_view.child = child
-    child.setText(0, tree.name+": "+tree.version)
+    child.setText(0, "%s: %s" % (tree.name, tree.version))
     child.tree = tree
     fg = QtGui.QBrush(QtCore.Qt.black)
     bg = QtGui.QBrush(QtGui.QColor(212,216,236)) # normal - blue
@@ -136,9 +136,10 @@ class TreeView(QtGui.QTreeWidget):
                 
     def mousein(self, item, col):
         """Show item path in the statusBar on mousein"""
-        text = item.tree.name+" - current: "+item.tree.path
-        if len(item.tree.updates())>1:
-            text += ", latest: "+item.tree.updates()[-1]
+        text = "%s - current: %s" %(item.tree.name, item.tree.path)
+        updates = item.tree.updates()
+        if len(updates)>1:
+            text += ", latest: %s" % updates[-1]
         self.top.statusBar.showMessage(text)
 
     def confirmWrite(self):
@@ -211,8 +212,8 @@ def dependency_checker():
     top.setupUi(window)
     top.statusBar = window.statusBar()
     tree = dependency_tree(None,path)
-    window.setWindowTitle("Tree Browser - "+tree.name+": "+tree.version+", Epics:"+\
-                   tree.e.epicsVer())
+    window.setWindowTitle("Tree Browser - %s: %s, Epics: %s" % (
+                            tree.name, tree.version, tree.e.epicsVer()))
     
     for loc in ["original","latest","consistent"]:
         def displayMessage(message):
