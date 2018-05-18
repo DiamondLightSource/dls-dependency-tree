@@ -13,7 +13,7 @@ will appear in the output list of paths"""
 
 import os, sys, shutil, re, glob
 from optparse import OptionParser
-from dls_environment import environment
+import dls_ade.dls_environment
 
 class dependency_tree:
     """A class for parsing configure/RELEASE for module names and versions"""    
@@ -47,7 +47,7 @@ class dependency_tree:
         if self.parent:
             self.e = self.parent.e.copy()
         else:
-            self.e = environment()
+            self.e = dls_ade.dls_environment.environment()
         ## list of child dependency_tree leaves of this modules
         self.leaves=[]
         ## path to module root (like /dls_sw/work/R3.14.8.2/support/motor)
@@ -472,7 +472,4 @@ def cl_dependency_tree():
     print separator.join(paths)
 cl_dependency_tree.__doc__=usage
 
-if __name__=="__main__":
-    from pkg_resources import require
-    require("dls.environment==1.0")
-    cl_dependency_tree()
+
