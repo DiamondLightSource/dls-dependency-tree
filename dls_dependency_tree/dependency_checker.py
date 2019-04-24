@@ -21,8 +21,8 @@ if __name__ == "__main__":
     sys.path.append(os.path.abspath(os.path.join(
         os.path.realpath(__file__), '..', '..', '..', 'dls_environment')))
 
-from tree import dependency_tree
-from tree_update import dependency_tree_update
+from .tree import dependency_tree
+from .tree_update import dependency_tree_update
 from dependency_checker_ui import Ui_Form1
 from subprocess import Popen, PIPE
 SIGNAL = QtCore.SIGNAL
@@ -45,7 +45,7 @@ def build_gui_tree(list_view,tree,parent=None):
     if len(tree.updates())>1:
         bg = QtGui.QBrush(QtGui.QColor(203,255,197)) # update available - green
         open_parents = True
-    if tree.name in list_view.clashes.keys():
+    if tree.name in list(list_view.clashes.keys()):
         open_parents = True
         if tree.path == tree.e.sortReleases([x.path for x in \
                                              list_view.clashes[tree.name]])[-1]:

@@ -1,7 +1,7 @@
 #!/bin/env dls-python2.6
 
 import os, sys, shutil, copy
-from tree import dependency_tree
+from .tree import dependency_tree
                         
 class dependency_tree_update:
     """Class for updating a dependency_tree object"""
@@ -48,7 +48,7 @@ class dependency_tree_update:
             new_line = self.new_tree.lines[i]
             if line != new_line:
                 message+= "Change: "+line+"To:     "+new_line
-        print message
+        print(message)
         return message
     
     def write_changes(self):
@@ -59,11 +59,11 @@ class dependency_tree_update:
         if os.path.isfile(backup_release):
             os.remove(backup_release)
         shutil.copy(release,backup_release)
-        print "Backup written to:",backup_release
+        print("Backup written to:",backup_release)
         file = open(release,"w")
         file.writelines(self.new_tree.lines)
         file.close()
-        print "Changes written to:",release
+        print("Changes written to:",release)
 
     def find_latest(self):
         """Update new_tree to latest versions of everything"""
@@ -96,7 +96,7 @@ class dependency_tree_update:
         clashes = self.new_tree.clashes(print_warnings=False)
         agenda = None
         lasti = -1
-        print "Making a consistent set of releases, press Ctrl-C to interrupt..."
+        print("Making a consistent set of releases, press Ctrl-C to interrupt...")
         while clashes:
             if agenda:
                 assert agenda.parent, "Module has no parent: "+str(agenda)
@@ -108,10 +108,10 @@ class dependency_tree_update:
                         agenda = None                                          
                     except AssertionError:
                         lasti -= 1
-                        if len(clashes[clashes.keys()[0]])+lasti<0:
+                        if len(clashes[list(clashes.keys())[0]])+lasti<0:
                             raise
                         else:
-                            agenda = clashes[clashes.keys()[0]][lasti]
+                            agenda = clashes[list(clashes.keys())[0]][lasti]
                 else:
                 # keep stepping up the tree until we find a module we are 
                 # allowed to revert
@@ -119,12 +119,12 @@ class dependency_tree_update:
             else:
                 # pick the next module to revert
                 lasti = -1
-                agenda = clashes[clashes.keys()[0]][-1]
-        print "Done"
+                agenda = clashes[list(clashes.keys())[0]][-1]
+        print("Done")
         
     def __revert(self,leaf):
         """Revert leaf by one version"""
-        assert self.differences.has_key(leaf.name), "Cannot revert module: "+\
+        assert leaf.name in self.differences, "Cannot revert module: "+\
              leaf.name+"\n"+self.errorMsg
         paths = self.differences[leaf.name]
         new_leaf_path = paths[-2]
@@ -132,7 +132,7 @@ class dependency_tree_update:
         if len(paths)<3:
             del(self.differences[leaf.name])
         new_leaf = dependency_tree(leaf.parent,new_leaf_path)
-        print "Reverting %s from %s to %s"%(leaf.name,leaf.version,new_leaf.version)
+        print("Reverting %s from %s to %s"%(leaf.name,leaf.version,new_leaf.version))
         new_leaf.versions = leaf.versions
         self.new_tree.replace_leaf(leaf,new_leaf)
                 

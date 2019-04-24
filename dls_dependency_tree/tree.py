@@ -140,7 +140,7 @@ class dependency_tree:
                         brace_re.findall(dict[macro])+open_re.findall(dict[macro]):
                     # find all unsubstituted macros, and replace them with their
                     # substitutions
-                    if find in self.macros.keys():
+                    if find in list(self.macros.keys()):
                         dict[macro]=dict[macro].replace("$("+find+")",\
                                                               self.macros[find])
                         dict[macro]=dict[macro].replace("${"+find+"}",\
@@ -196,8 +196,8 @@ class dependency_tree:
             else:
                 self.version="invalid"
                 if self.warnings:
-                    print >> sys.stderr, "***Warning: can't find module: %s " \
-                        "with RELEASE file: %s " %(self.name, self.release())
+                    print("***Warning: can't find module: %s " \
+                        "with RELEASE file: %s " %(self.name, self.release()), file=sys.stderr)
                 return
             
         # read in RELEASE
@@ -341,12 +341,12 @@ class dependency_tree:
         clashes = {}
         # sort the flattened leaves by module name
         for leaf in leaves:
-            if clashes.has_key(leaf.name):
+            if leaf.name in clashes:
                 clashes[leaf.name]+=[leaf]
             else:
                 clashes[leaf.name]=[leaf]
         # discard modules that are not causing a problem
-        for key in clashes.keys():
+        for key in list(clashes.keys()):
             # check version is identical to first in the list
             compare = [ clashes[key][0].version == x.version for x in \
                         clashes[key] ]
@@ -354,12 +354,12 @@ class dependency_tree:
                 del(clashes[key])
             else:
                 if print_warnings:
-                    print >> sys.stderr, "*** Warning: releases do not form a consistent set:"
+                    print("*** Warning: releases do not form a consistent set:", file=sys.stderr)
                 for leaf in clashes[key]:
                     if print_warnings:
-                        print >> sys.stderr, leaf.parent.name + ": " + leaf.parent.version + " defines " + leaf.name + " as " + leaf.path
+                        print(leaf.parent.name + ": " + leaf.parent.version + " defines " + leaf.name + " as " + leaf.path, file=sys.stderr)
         # now sort clashes by version, lowest first
-        for name in clashes.keys():
+        for name in list(clashes.keys()):
             modules = [ (m.path,m) for m in clashes[name] ]
             new_list = [ x[1] for x in self.e.sortReleases(modules) ]
             clashes[name] = new_list
@@ -374,7 +374,7 @@ class dependency_tree:
 
     def print_tree(self,spaces=0):
         """Print an ascii art text representation of self"""
-        print " |"*spaces+"-%s: %s (%s)" %(self.name, self.version, self.path)
+        print(" |"*spaces+"-%s: %s (%s)" %(self.name, self.version, self.path))
         for leaf in self.leaves:
             leaf.print_tree(spaces+1)
 
@@ -401,7 +401,7 @@ class dependency_tree:
         leaf_path = leaf.path
         new_leaf_path = new_leaf.path
         # find the macro so that its substitution = leaf.path            
-        for macro in self.macros.keys():
+        for macro in list(self.macros.keys()):
             if self.macros[macro]==leaf_path:
                 break
         # find the line in RELEASE that refers to it
@@ -415,7 +415,7 @@ class dependency_tree:
                         found = lines
                         break
         if found != self.lines:
-            print "Cannot update %s as macro %s is not defined in it" %(self.release(), macro)
+            print("Cannot update %s as macro %s is not defined in it" %(self.release(), macro))
             return
         # replace macros in that line
         dict = {}
@@ -423,8 +423,8 @@ class dependency_tree:
         new_line = line.replace(l[1],self.__substitute_macros(dict)[l[0]])          
         # now replace the old leaf path for the new leaf path
         if leaf_path not in new_line:
-            print >> sys.stderr, "Module path: "+leaf_path+\
-                                 " should be in this line: "+new_line
+            print("Module path: "+leaf_path+\
+                                 " should be in this line: "+new_line, file=sys.stderr)
             return
         self.leaves[self.leaves.index(leaf)]=new_leaf                    
         new_line = new_line.replace(leaf_path,new_leaf_path)
@@ -437,7 +437,7 @@ class dependency_tree:
         for key in set(self.macros)-set(["TOP"]+exclude_list):
             if self.macros[key]:
                 rev_macros[self.macros[key]]="$("+key+")"
-        sub_list = sorted(rev_macros.keys(), key=len, reverse=True)
+        sub_list = sorted(list(rev_macros.keys()), key=len, reverse=True)
         for sub in sub_list:
             path = line.split("#")[0].split("=")[-1].strip()
             if sub != path and sub == path[:len(sub)]:
@@ -469,7 +469,7 @@ def cl_dependency_tree():
         separator = "\n"
     tree = dependency_tree(None,module_path=args[0])
     paths = tree.paths(glob)
-    print separator.join(paths)
+    print(separator.join(paths))
 cl_dependency_tree.__doc__=usage
 
 
