@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d24eb1c125e11dfcac3a129e700fc620e4db64263536b3fe295ebfb24430bae6"
+            "sha256": "e34fab8ac81e9dc86ed0ef30529d389e74024c0228f0ebd7ca768c0c106b7c89"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -30,12 +30,14 @@
         },
         "certifi": {
             "hashes": [
-                "sha256:59b7658e26ca9c7339e00f8f4636cdfe59d34fa37b9b04f6f9e9926b3cece1a5"
+                "sha256:59b7658e26ca9c7339e00f8f4636cdfe59d34fa37b9b04f6f9e9926b3cece1a5",
+                "sha256:b26104d6835d1f5e49452a26eb2ff87fe7090b89dfcaee5ea2212697e1e1d7ae"
             ],
             "version": "==2019.3.9"
         },
         "chardet": {
             "hashes": [
+                "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae",
                 "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"
             ],
             "version": "==3.0.4"
@@ -48,16 +50,17 @@
         },
         "cookiecutter": {
             "hashes": [
+                "sha256:1316a52e1c1f08db0c9efbf7d876dbc01463a74b155a0d83e722be88beda9a3e",
                 "sha256:ed8f54a8fc79b6864020d773ce11539b5f08e4617f353de1f22d23226f6a0d36"
             ],
             "version": "==1.6.0"
         },
         "dls-ade": {
             "hashes": [
-                "sha256:58b6cb7234dcf42d5c990a8eeaab2524857d2fd94b7f1c27e8b73fcceda932cd"
+                "sha256:b607fff4f2251ac9d0a261f3ed8d7eb23b0844cb54c52ab1cb40ebea6029bf96"
             ],
             "index": "pypi",
-            "version": "==0.16"
+            "version": "==0.18"
         },
         "future": {
             "hashes": [
@@ -109,7 +112,7 @@
         },
         "pipfile": {
             "hashes": [
-                "sha256:f7d9f15de8b660986557eb3cc5391aa1a16207ac41bc378d03f414762d36c984"
+                "sha256:914d1d2884dc0556807477f03602a6f33c971a4c757f46bd5bef5352a73f96a0"
             ],
             "version": "==0.0.2"
         },
@@ -187,9 +190,9 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39"
+                "sha256:4c291ca23bbb55c76518905869ef34bdd5f0e46af7afe6861e8375643ffee1a0"
             ],
-            "version": "==1.24.1"
+            "version": "==1.24.2"
         },
         "whichcraft": {
             "hashes": [
