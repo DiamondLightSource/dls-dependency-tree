@@ -216,16 +216,11 @@ class formLog(QtGui.QDialog):
 
 def dependency_checker():
     """Parses arguments, intialises treeviews and displays them"""
-    parser = OptionParser(usage)
-    (options, args) = parser.parse_args()
-    if len(args) != 1:
-        if len(args) == 0:
-            path = os.getcwd()
-        else:
-            parser.error("Invalid number of arguments")
-    else:
-        path = os.path.abspath(args[0])
-        
+    parser = ArgumentParser(description=usage)
+    parser.add_argument("module_path", nargs='?', default=os.getcwd(), type=str, help="Path to RELEASE file")
+    args = parser.parse_args()
+    path = os.path.abspath(args.module_path)
+
     app = QtGui.QApplication([])
     top = Ui_Form1()
     window = QtGui.QMainWindow()
