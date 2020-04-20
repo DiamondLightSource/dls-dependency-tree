@@ -13,19 +13,39 @@ versions between the original and latest numbers, view SVN logs, and edit
 configure/RELEASE files directly. The updated trees can then be written to 
 configure/RELEASE, or the changes printed on the commandline."""
 
-import os, sys, signal, string, new, traceback
-from optparse import OptionParser
-from PyQt4 import QtCore, QtGui
+import os
+import signal
+import sys
+import traceback
+from argparse import ArgumentParser
+from subprocess import PIPE, Popen
+
+from PyQt5 import uic
+from PyQt5.QtCore import QProcess, Qt
+from PyQt5.QtGui import QBrush, QColor, QFont, QPalette
+from PyQt5.QtWidgets import (
+    QApplication,
+    QDialog,
+    QGridLayout,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    )
+
+from .tree import dependency_tree
+from .tree_update import dependency_tree_update
+
+UI_FILE = os.path.join(os.path.dirname(__file__), 'dependency_checker.ui')
 
 if __name__ == "__main__":
     sys.path.append(os.path.abspath(os.path.join(
         os.path.realpath(__file__), '..', '..', '..', 'dls_environment')))
 
-from .tree import dependency_tree
-from .tree_update import dependency_tree_update
-from dependency_checker_ui import Ui_Form1
-from subprocess import Popen, PIPE
-SIGNAL = QtCore.SIGNAL
 
 def build_gui_tree(list_view,tree,parent=None):
     """Function that takes a ListView or ListViewItem, and populates its
