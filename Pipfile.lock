@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d8c2dfd189014f15f727d081e41c8208b0f28bf2cc4d8ed3f33550d84c000a08"
+            "sha256": "0f334e2cabc4f8aa0d5db5f03a85438d516a3c8239f4eb9d050aae20f80097a6"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -64,16 +64,22 @@
             ],
             "version": "==1.6.0"
         },
+        "distro": {
+            "hashes": [
+                "sha256:eedf82a470ebe7d010f1872c17237c79ab04097948800029994fa458e52fb4b4"
+            ],
+            "version": "==1.4.0"
+        },
         "dls-ade": {
             "hashes": [
-                "sha256:3f05aacbf212a40d87b46fb33f5e80dcf17c973036782daede0b6153eaa6f190",
-                "sha256:cc984e82857ffcc822e626254fedc9561591c034670ddf14da0196c42b6186ee"
+                "sha256:0b35ea81fc9816cbe048d94e62f169e0ffc76b45cecac52c96d8b502011e3e2f",
+                "sha256:2110b7e7337fdee00ef1ad9a1e02c7ddfc1a568776f236de39a88e2a11aaea15"
             ],
-            "version": "==2.0.0a4"
+            "version": "==2.1b1"
         },
         "dls-dependency-tree": {
-            "editable": true,
-            "path": "."
+            "path": ".",
+            "version": "==3.0a1"
         },
         "future": {
             "hashes": [
@@ -338,16 +344,22 @@
             ],
             "version": "==1.6.0"
         },
+        "distro": {
+            "hashes": [
+                "sha256:eedf82a470ebe7d010f1872c17237c79ab04097948800029994fa458e52fb4b4"
+            ],
+            "version": "==1.4.0"
+        },
         "dls-ade": {
             "hashes": [
-                "sha256:3f05aacbf212a40d87b46fb33f5e80dcf17c973036782daede0b6153eaa6f190",
-                "sha256:cc984e82857ffcc822e626254fedc9561591c034670ddf14da0196c42b6186ee"
+                "sha256:0b35ea81fc9816cbe048d94e62f169e0ffc76b45cecac52c96d8b502011e3e2f",
+                "sha256:2110b7e7337fdee00ef1ad9a1e02c7ddfc1a568776f236de39a88e2a11aaea15"
             ],
-            "version": "==2.0.0a4"
+            "version": "==2.1b1"
         },
         "dls-dependency-tree": {
-            "editable": true,
-            "path": "."
+            "path": ".",
+            "version": "==3.0a1"
         },
         "future": {
             "hashes": [

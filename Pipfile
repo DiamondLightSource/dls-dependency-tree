@@ -3,13 +3,14 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
-
 [dev-packages]
 dls-dependency-tree = {editable = true, extras = ["dev"], path = "."}
 
 [packages]
-dls-dependency-tree = {editable = true, path = "."}
-
+dls-dependency-tree = {path = "."}
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
