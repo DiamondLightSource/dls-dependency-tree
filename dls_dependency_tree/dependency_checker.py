@@ -6,6 +6,7 @@ import sys
 import traceback
 from argparse import ArgumentParser
 from subprocess import PIPE, Popen
+from typing import Optional
 
 from PyQt5 import uic
 from PyQt5.QtCore import QProcess, Qt
@@ -53,7 +54,11 @@ if __name__ == "__main__":
     )
 
 
-def build_gui_tree(list_view, tree, parent=None):
+def build_gui_tree(
+    list_view: "TreeView",
+    tree: dependency_tree,
+    parent: Optional[QTreeWidgetItem] = None,
+):
     """Build GUI Tree.
 
     Function that takes a ListView or ListViewItem, and populates its
@@ -67,8 +72,8 @@ def build_gui_tree(list_view, tree, parent=None):
         child = QTreeWidgetItem(list_view)
         list_view.child = child
     child.setText(0, "%s: %s" % (tree.name, tree.version))
-    child.tree = tree
-    fg = QBrush(Qt.black)
+    setattr(child, "tree", tree)
+    fg = QBrush(Qt.GlobalColor.black)
     bg = QBrush(QColor(212, 216, 236))  # normal - blue
     open_parents = False
     if len(tree.updates()) > 1:
@@ -82,7 +87,7 @@ def build_gui_tree(list_view, tree, parent=None):
         ):
             fg = QBrush(QColor(153, 150, 0))  # involved in clash: yellow
         else:
-            fg = QBrush(Qt.red)  # causes clash: red
+            fg = QBrush(Qt.GlobalColor.red)  # causes clash: red
     if tree.version == "invalid":
         open_parents = True
         fg = QBrush(QColor(160, 32, 240))  # invalid: purple
@@ -254,7 +259,7 @@ class formLog(QDialog):
         self.btnClose.setText("Close")
 
 
-def dependency_checker():
+def dependency_checker() -> None:
     """Parse arguments, intialise treeviews and display them."""
     parser = ArgumentParser(description=usage)
     parser.add_argument(
@@ -292,10 +297,13 @@ def dependency_checker():
             update = dependency_tree_update(
                 tree, consistent=(loc == "consistent"), update=(loc != "original")
             )
+            # assert isinstance(update, dependency_tree_update)
             if loc == "original" or not update.new_tree == tree:
                 view = TreeView(update.new_tree, loc, getattr(top, loc + "Frame"))
-                view.top = top
-                view.update = update
+
+                setattr(view, "top", top)
+                setattr(view, "update", update)
+
                 getattr(top, loc + "Write").clicked.connect(view.confirmWrite)
                 getattr(top, loc + "Print").clicked.connect(view.printChanges)
                 grid.addWidget(view)

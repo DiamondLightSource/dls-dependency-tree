@@ -5,6 +5,7 @@ import os
 import re
 import sys
 from optparse import OptionParser
+from typing import Dict, List, Optional, Tuple, Union
 
 import dls_ade.dls_environment
 
@@ -26,7 +27,12 @@ class dependency_tree:
     ignore_list = ["TEMPLATE_TOP", "EPICS_BASE"]
 
     def __init__(
-        self, parent=None, module_path=None, includes=True, warnings=True, hostarch=None
+        self,
+        parent: Optional["dependency_tree"] = None,
+        module_path: Optional[str] = None,
+        includes: bool = True,
+        warnings: bool = True,
+        hostarch=None,
     ):
         """Initialise the object.
 
@@ -44,7 +50,7 @@ class dependency_tree:
         self.parent = parent
         self.includes = includes
         self.warnings = warnings
-        self._release = None
+        self._release: Optional[str] = None
         # this is the epics host arch
         if hostarch:
             self.hostarch = hostarch
@@ -52,31 +58,32 @@ class dependency_tree:
             self.hostarch = os.environ.get("EPICS_HOST_ARCH", "linux-x86_64")
         # dls.environment object for getting paths and release order
         if self.parent:
-            self.e = self.parent.e.copy()
+            self.e: dls_ade.dls_environment.environment = self.parent.e.copy()
         else:
             self.e = dls_ade.dls_environment.environment()
         # list of child dependency_tree leaves of this modules
-        self.leaves = []
+        self.leaves: List[dependency_tree] = []
         # path to module root (like /dls_sw/work/R3.14.8.2/support/motor)
-        self.path = ""
+        self.path: str = ""
         # name of the module (like motor or sscan)
-        self.name = ""
+        self.name: str = ""
         # version of module (like 6-3dls1 or work or local)
-        self.version = ""
+        self.version: str = ""
+        self.versions: List[Tuple[str, str]] = []
         # dict of fully substituted macros
         # (like macros["SUPPORT"]="/dls_sw/prod/R3.14.8.2/support")
-        self.macros = {"TOP": "."}
-        self.macro_order = []
+        self.macros: Dict[str, str] = {"TOP": "."}
+        self.macro_order: List[str] = []
         # stored lines of the RELEASE file. Updated as changes are written
-        self.lines = []
-        self.extra_lines = []
+        self.lines: List[str] = []
+        self.extra_lines: List[str] = []
         if self.module_path:
             # import a configure RELEASE
             self.process_module(self.module_path)
 
-    def copy(self):
+    def copy(self) -> "dependency_tree":
         """Return a copy of this dependency_tree object."""
-        new_tree = dependency_tree(
+        new_tree: dependency_tree = dependency_tree(
             self.parent,
             includes=self.includes,
             warnings=self.warnings,
@@ -96,12 +103,15 @@ class dependency_tree:
             new_tree.leaves.append(new_leaf)
         return new_tree
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Override the repr method so "print dependency_tree" gives a useful output."""
         return "<dependency_tree - %s: %s>" % (self.name, self.version)
 
-    def __eq__(self, tree):
+    def __eq__(self, tree: object) -> bool:
         """Override the == method to check for name, version, and equality of leaves."""
+        if not isinstance(tree, dependency_tree):
+            return NotImplemented
+
         output = (
             self.name == tree.name
             and self.version == tree.version
@@ -113,7 +123,7 @@ class dependency_tree:
             output = output and self.leaves[i] == tree.leaves[i]
         return output
 
-    def init_version(self):
+    def init_version(self) -> None:
         """Initialise self.name and self.version.
 
         This is done from self.path using the site environment settings.
@@ -121,7 +131,7 @@ class dependency_tree:
         self.name, self.version = self.e.classifyPath(self.path)
         # print self.path, self.e.classifyPath(self.path)
 
-    def __possible_paths(self):
+    def __possible_paths(self) -> List[str]:
         """Return a list of all possible module paths for self.
 
         These are listed in ascending order.
@@ -146,9 +156,9 @@ class dependency_tree:
         # return paths listed in ascending order
         return self.e.sortReleases(paths)
 
-    def __substitute_macros(self, dict):
+    def __substitute_macros(self, dict: Dict[str, str]) -> Dict[str, str]:
         """Substitute macros in dict."""
-        retries = 5
+        retries: int = 5
         while retries > 0:
             bracket_re = re.compile(r"\$\(([^\)]+)\)")
             brace_re = re.compile(r"\$\{([^\)]+)\}")
@@ -177,22 +187,22 @@ class dependency_tree:
             retries -= 1
         return dict
 
-    def __process_line(self, line):
+    def __process_line(self, line: str):
         """Process a line of configure/RELEASE after comments have been stripped out."""
         # check the line defines a macro
         if "=" in line:
-            list = [x.strip() for x in line.split("=")]
+            list: List[str] = [x.strip() for x in line.split("=")]
             # try and find epics base in the line
-            match = self.e.epics_ver_re.search(list[1])
-            if list[0] == "EPICS_BASE" and match:
+            match_: Union[re.Match[str], None] = self.e.epics_ver_re.search(list[1])
+            if list[0] == "EPICS_BASE" and match_:
                 # if epics version is defined, set it in the environment
-                self.e.setEpics(match.group())
-                # print "Set epics", match.group(), self.name
+                self.e.setEpics(match_.group())
+                # print "Set epics", match_.group(), self.name
             # otherwise, define it in the module dictionary
             self.macros[list[0]] = list[1]
             self.macro_order.append(list[0])
 
-    def process_module(self, module_path):
+    def process_module(self, module_path: str) -> None:
         """Process the configure/RELEASE file and populate the tree from it.
 
         module_path is the path to configure/RELEASE.
@@ -230,13 +240,13 @@ class dependency_tree:
         # read in RELEASE
         self.lines = open(self.release()).readlines()
 
-        pre_lines = []
-        post_lines = []
+        pre_lines: List[str] = []
+        post_lines: List[str] = []
 
         # if we are in an iocbuilder RELEASE file then include
         # If we are in an etc/makeIocs dir, use the symbols from the module
         # configure/RELEASE
-        r = self.release()
+        r: str = self.release()
         if os.path.abspath(os.path.join(r, "..", "..")).endswith("etc"):
             r = os.path.abspath(
                 os.path.join(self.release(), "..", "..", "..", "configure", "RELEASE")
@@ -252,7 +262,7 @@ class dependency_tree:
             post_lines += open(r).readlines()
 
         # store current working directory then go to module base
-        cwd = os.getcwd()
+        cwd: str = os.getcwd()
         os.chdir(self.path)
 
         # for each line in the RELEASE file, populate the macros dictionary if
@@ -264,7 +274,7 @@ class dependency_tree:
             # be a reference to a RELEASE file elsewhere in the file system
             if "include" in line[:8]:
                 if self.includes:
-                    fname = line.split(" ")[1].rstrip()
+                    fname: str = line.split(" ")[1].rstrip()
                     for module in self.macros:
                         fname = fname.replace("$(" + module + ")", self.macros[module])
                     try:
@@ -315,7 +325,7 @@ class dependency_tree:
             elif module not in self.ignore_list:
                 # module is probably valid
                 # so make a tree from it and add it to leaves
-                new_leaf = dependency_tree(
+                new_leaf: dependency_tree = dependency_tree(
                     parent=self,
                     module_path=self.macros[module],
                     includes=self.includes,
@@ -328,18 +338,20 @@ class dependency_tree:
         # go back to initial place and return the values
         os.chdir(cwd)
 
-    def flatten(self, include_self=True, remove_dups=True):
+    def flatten(
+        self, include_self: bool = True, remove_dups: bool = True
+    ) -> List["dependency_tree"]:
         """Return a flattened list of leaves.
 
         If include_self, append self to the list. Then flatten each leaf in turn and
         append it to the list. If remove_dups then get rid of duplicate leaves.
         Finally return this list.
         """
-        output = []
+        output: List[dependency_tree] = []
         for leaf in self.leaves:
-            flattened_list = leaf.flatten()
+            flattened_list: List[dependency_tree] = leaf.flatten()
             for leaf in flattened_list:
-                in_list = False
+                in_list: bool = False
                 for path in [x.path for x in output]:
                     if leaf.path == path:
                         in_list = True
@@ -349,7 +361,9 @@ class dependency_tree:
             output.append(self)
         return output
 
-    def paths(self, globs=["/data"], include_name=False):
+    def paths(
+        self, globs: List[str] = ["/data"], include_name: bool = False
+    ) -> Union[Tuple[List[str], List[str]], List[str]]:
         """Return the list of paths matching leaf.path+glob.
 
         Do this for each leaf in self.flatten(), for each glob in globs.
@@ -357,8 +371,8 @@ class dependency_tree:
         return a tuple of the list of module names with the list of module paths,
         otherwise just return the list of module paths.
         """
-        poutput = []
-        noutput = []
+        poutput: List[str] = []
+        noutput: List[str] = []
         leaves = self.flatten()
         for leaf in leaves:
             for g in globs:
@@ -370,16 +384,18 @@ class dependency_tree:
         else:
             return poutput
 
-    def clashes(self, print_warnings=True):
+    def clashes(
+        self, print_warnings: bool = True
+    ) -> Dict[str, List["dependency_tree"]]:
         """Return a dict of all clashes occurring in the tree.
 
         This dict has the format clashes[name] = [leaves]. The leaves associated with
         each name have leaf.name == name, and all have different leaf.version numbers.
         If print_warnings, then warn if clashes exist.
         """
-        leaves = self.flatten(remove_dups=False)
+        leaves: List[dependency_tree] = self.flatten(remove_dups=False)
         # clashes[name] = [leaves]
-        clashes = {}
+        clashes: Dict[str, List["dependency_tree"]] = {}
         # sort the flattened leaves by module name
         for leaf in leaves:
             if leaf.name in clashes:
@@ -389,7 +405,9 @@ class dependency_tree:
         # discard modules that are not causing a problem
         for key in list(clashes.keys()):
             # check version is identical to first in the list
-            compare = [clashes[key][0].version == x.version for x in clashes[key]]
+            compare: List[bool] = [
+                clashes[key][0].version == x.version for x in clashes[key]
+            ]
             if min(compare) == 1:
                 del clashes[key]
             else:
@@ -399,6 +417,7 @@ class dependency_tree:
                         file=sys.stderr,
                     )
                 for leaf in clashes[key]:
+                    assert isinstance(leaf.parent, dependency_tree)
                     if print_warnings:
                         print(
                             leaf.parent.name
@@ -412,50 +431,56 @@ class dependency_tree:
                         )
         # now sort clashes by version, lowest first
         for name in list(clashes.keys()):
-            modules = [(m.path, m) for m in clashes[name]]
-            new_list = [x[1] for x in self.e.sortReleases(modules)]
+            modules: List[tuple[str, dependency_tree]] = [
+                (m.path, m) for m in clashes[name]
+            ]
+            new_list: List[dependency_tree] = [
+                x[1] for x in self.e.sortReleases(modules)
+            ]
             clashes[name] = new_list
         return clashes
 
-    def updates(self):
+    def updates(self) -> List[str]:
         """Return all possible paths for self that are considered updates."""
         paths = self.__possible_paths()
         return paths[paths.index(self.path) :]
 
-    def print_tree(self, spaces=0):
+    def print_tree(self, spaces: int = 0) -> None:
         """Print an ascii art text representation of self."""
         print(" |" * spaces + "-%s: %s (%s)" % (self.name, self.version, self.path))
         for leaf in self.leaves:
             leaf.print_tree(spaces + 1)
 
-    def release(self):
+    def release(self) -> str:
         """Return the path to the RELEASE file."""
         # search for a suitable release number in the path
         if self._release is not None:
             return self._release
-        ver = self.e.epics_ver_re.search(self.path)
+        ver: Union[re.Match[str], None] = self.e.epics_ver_re.search(self.path)
         if ver and ver.group() < "R3.14":
             self.e.setEpics(ver.group())
         # if this cannot be found, use the default value
         if self.e.epicsVer() < "R3.14":
-            release = os.path.join(self.path, "config", "RELEASE")
+            release: str = os.path.join(self.path, "config", "RELEASE")
         else:
             release = os.path.join(self.path, "configure", "RELEASE")
         return release
 
-    def replace_leaf(self, leaf, new_leaf):
+    def replace_leaf(
+        self, leaf: "dependency_tree", new_leaf: "dependency_tree"
+    ) -> None:
         """Replace leaf with new_leaf. Update self.lines accordingly."""
         assert leaf in self.leaves, (
             "Module not listed in this tree, can't replace it: " + leaf.path
         )
-        leaf_path = leaf.path
-        new_leaf_path = new_leaf.path
+        leaf_path: str = leaf.path
+        new_leaf_path: str = new_leaf.path
         # find the macro so that its substitution = leaf.path
         for macro in list(self.macros.keys()):
             if self.macros[macro] == leaf_path:
                 break
         # find the line in RELEASE that refers to it
-        found = None
+        found: Optional[List[str]] = None
         for lines in [self.extra_lines, self.lines]:
             for i, line in reversed(list(enumerate(lines))):
                 line = line.split("#")[0]
@@ -471,9 +496,9 @@ class dependency_tree:
             )
             return
         # replace macros in that line
-        dict = {}
+        dict: Dict[str, str] = {}
         dict[macro_line[0]] = macro_line[1]
-        new_line = line.replace(
+        new_line: str = line.replace(
             macro_line[1], self.__substitute_macros(dict)[macro_line[0]]
         )
         # now replace the old leaf path for the new leaf path
@@ -489,13 +514,13 @@ class dependency_tree:
         self.lines[i] = self.replace_macros(new_line, [macro])
         self.macros[macro] = new_leaf_path
 
-    def replace_macros(self, line, exclude_list=[]):
+    def replace_macros(self, line: str, exclude_list: List[str] = []) -> str:
         """Replace macros with ones in self.macros."""  # ?Not sure if this is the case?
-        rev_macros = {}
+        rev_macros: Dict[str, str] = {}
         for key in set(self.macros) - set(["TOP"] + exclude_list):
             if self.macros[key]:
                 rev_macros[self.macros[key]] = "$(" + key + ")"
-        sub_list = sorted(list(rev_macros.keys()), key=len, reverse=True)
+        sub_list: List[str] = sorted(list(rev_macros.keys()), key=len, reverse=True)
         for sub in sub_list:
             path = line.split("#")[0].split("=")[-1].strip()
             if sub != path and sub == path[: len(sub)]:
