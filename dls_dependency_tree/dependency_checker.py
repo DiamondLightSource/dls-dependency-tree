@@ -269,14 +269,18 @@ def dependency_checker() -> None:
         type=str,
         help="Path to RELEASE file",
     )
+    parser.add_argument(
+        "--strict",
+        action='store_true',
+        help="Enforce strict version numbering",
+    )
     args = parser.parse_args()
     path = os.path.abspath(args.module_path)
-
     app = QApplication([])
     window = QMainWindow()
     top = uic.loadUi(UI_FILE, window)
     top.statusBar = window.statusBar()
-    tree = dependency_tree(None, path)
+    tree = dependency_tree(None, path, strict=args.strict)
     window.setWindowTitle(
         "Tree Browser - %s: %s, Epics: %s"
         % (tree.name, tree.version, tree.e.epicsVer())
@@ -297,7 +301,6 @@ def dependency_checker() -> None:
             update = dependency_tree_update(
                 tree, consistent=(loc == "consistent"), update=(loc != "original")
             )
-            # assert isinstance(update, dependency_tree_update)
             if loc == "original" or not update.new_tree == tree:
                 view = TreeView(update.new_tree, loc, getattr(top, loc + "Frame"))
 

@@ -30,8 +30,9 @@ class dependency_tree_update:
         self.differences: Dict[str, List[str]] = {}
         # original dependency_tree object
         self.old_tree: dependency_tree = tree
+        self.strict=self.old_tree.strict
         # new updated dependency_tree object
-        self.new_tree: dependency_tree = dependency_tree()
+        self.new_tree: dependency_tree = dependency_tree(strict=self.strict)
 
         if self.old_tree.clashes(print_warnings=False):
             # Message to print if consistency fails
@@ -91,7 +92,7 @@ class dependency_tree_update:
             if len(leaf_updates) > 1:
                 # if there are updates available, add
                 self.differences[leaf.name] = leaf_updates
-                dummy = dependency_tree(None)
+                dummy = dependency_tree(None, strict=self.strict)
                 leaf.versions = []
                 for path in leaf_updates:
                     dummy.path = path
@@ -102,7 +103,8 @@ class dependency_tree_update:
         """Update new_tree to latest versions of everything."""
         for leaf in self.new_tree.leaves:
             if leaf.name in self.differences:
-                new_leaf = dependency_tree(leaf.parent, self.differences[leaf.name][-1])
+                new_leaf = dependency_tree(leaf.parent, self.differences[leaf.name][-1],
+                                           strict=self.strict)
                 new_leaf.versions = leaf.versions
                 self.new_tree.replace_leaf(leaf, new_leaf)
 
@@ -149,7 +151,7 @@ class dependency_tree_update:
         self.differences[leaf.name] = paths[:-1]
         if len(paths) < 3:
             del self.differences[leaf.name]
-        new_leaf = dependency_tree(leaf.parent, new_leaf_path)
+        new_leaf = dependency_tree(leaf.parent, new_leaf_path, strict=self.strict)
         print(
             "Reverting %s from %s to %s" % (leaf.name, leaf.version, new_leaf.version)
         )

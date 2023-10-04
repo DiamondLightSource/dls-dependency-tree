@@ -32,7 +32,8 @@ class dependency_tree:
         module_path: Optional[str] = None,
         includes: bool = True,
         warnings: bool = True,
-        hostarch=None,
+        hostarch: Optional[str] = None,
+        strict: bool = False
     ):
         """Initialise the object.
 
@@ -51,6 +52,7 @@ class dependency_tree:
         self.includes = includes
         self.warnings = warnings
         self._release: Optional[str] = None
+        self.strict = strict
         # this is the epics host arch
         if hostarch:
             self.hostarch = hostarch
@@ -58,6 +60,7 @@ class dependency_tree:
             self.hostarch = os.environ.get("EPICS_HOST_ARCH", "linux-x86_64")
         # dls.environment object for getting paths and release order
         if self.parent:
+            self.strict = self.parent.strict
             self.e: dls_ade.dls_environment.environment = self.parent.e.copy()
         else:
             self.e = dls_ade.dls_environment.environment()
@@ -88,6 +91,7 @@ class dependency_tree:
             includes=self.includes,
             warnings=self.warnings,
             hostarch=self.hostarch,
+            strict=self.strict
         )
         new_tree.e = self.e.copy()
         new_tree.path = self.path
@@ -143,14 +147,15 @@ class dependency_tree:
         else:
             prefix = self.e.prodArea("support")
         prefix = os.path.join(prefix, self.name)
+        paths = []
         if os.path.isdir(prefix):
-            paths = [
-                os.path.join(prefix, x)
-                for x in os.listdir(prefix)
-                if ".tar.gz" not in x
-            ]
-        else:
-            paths = []
+            for version in os.listdir(prefix):
+                if ".tar.gz" in version:
+                    continue
+                if not self.strict or re.match(
+                    r"^[0-9\-]*(dls)*[0-9\-]*$", version
+                ):
+                    paths.append(os.path.join(prefix, version))
         if self.path not in paths:
             paths = [self.path] + paths
         # return paths listed in ascending order
@@ -331,6 +336,7 @@ class dependency_tree:
                     includes=self.includes,
                     warnings=self.warnings,
                     hostarch=self.hostarch,
+                    strict=self.strict
                 )
                 if new_leaf.name:
                     self.leaves.append(new_leaf)
