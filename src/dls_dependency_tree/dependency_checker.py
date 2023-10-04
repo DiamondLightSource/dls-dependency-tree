@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import (
 
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
+from .ioc_build import build_ioc
 
 author = "Tom Cobb"
 usage = """%prog [<module_path>]
@@ -203,6 +204,18 @@ class TreeView(QTreeWidget):
         if response == QMessageBox.Yes:
             self.update.write_changes()
 
+    def confirmBuildIoc(self, release_path):
+        """Popup a confimation box for remaking the IOC."""
+        response = QMessageBox.question(
+            None,
+            "Build IOC",
+            "Are you sure you want to remake the IOC?",
+            QMessageBox.Yes,
+            QMessageBox.No,
+        )
+        if response == QMessageBox.Yes:
+            build_ioc(release_path)
+
     def printChanges(self):
         """Print changes to dependencies."""
         text = self.update.print_changes()
@@ -285,6 +298,8 @@ def dependency_checker() -> None:
         "Tree Browser - %s: %s, Epics: %s"
         % (tree.name, tree.version, tree.e.epicsVer())
     )
+
+    getattr(top, "buildIoc").clicked.connect(lambda: view.confirmBuildIoc(path))
 
     for loc in ["original", "latest", "consistent"]:
 
