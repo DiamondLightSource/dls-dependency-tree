@@ -8,7 +8,6 @@ from argparse import ArgumentParser
 from subprocess import PIPE, Popen
 from typing import Optional
 
-from PyQt5 import uic
 from PyQt5.QtCore import QProcess, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QPalette
 from PyQt5.QtWidgets import (
@@ -25,6 +24,7 @@ from PyQt5.QtWidgets import (
     QTreeWidgetItem,
 )
 
+from .dependency_checker_ui import Ui_Form1
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
 from .ioc_build import build_ioc
@@ -42,8 +42,6 @@ versions between the original and latest numbers, view SVN logs, and edit
 configure/RELEASE files directly. The updated trees can then be written to
 configure/RELEASE, or the changes printed on the commandline."""
 
-
-UI_FILE = os.path.join(os.path.dirname(__file__), "dependency_checker.ui")
 
 if __name__ == "__main__":
     sys.path.append(
@@ -291,7 +289,8 @@ def dependency_checker() -> None:
     path = os.path.abspath(args.module_path)
     app = QApplication([])
     window = QMainWindow()
-    top = uic.loadUi(UI_FILE, window)
+    top = Ui_Form1()
+    top.setupUi(window)
     top.statusBar = window.statusBar()
     tree = dependency_tree(None, path, strict=args.strict)
     window.setWindowTitle(
