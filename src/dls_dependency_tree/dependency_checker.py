@@ -30,8 +30,7 @@ from .tree_update import dependency_tree_update
 from .ioc_build import build_ioc
 
 author = "Tom Cobb"
-usage = """%prog [<module_path>]
-
+usage = """
 <module_path> is the path to the module root or configure/RELEASE file. If it
 isn't specified, then the current working directory is taken as the module root.
 This program is a graphical diplay tool for the configure/RELEASE tree. It
