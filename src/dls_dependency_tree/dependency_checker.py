@@ -140,8 +140,9 @@ class TreeView(QTreeWidget):
             self.contextItem = item
             menu.addAction("Edit RELEASE", self.externalEdit)
             if hasattr(item.tree, "versions"):
-                if item.tree.version != item.tree.versions[0][0]:
-                    menu.addAction("SVN log", self.svn_log)
+                if item.tree.versions: # if list is not empty
+                    if item.tree.version != item.tree.versions[0][0]:
+                        menu.addAction("SVN log", self.svn_log)
                 self.context_methods = []
                 for version, path in [
                     (v, p) for v, p in item.tree.versions if v != item.tree.version
