@@ -56,6 +56,13 @@ class Ui_Form1(object):
         self.consistentWrite.setMinimumSize(QtCore.QSize(0, 38))
         self.consistentWrite.setObjectName("consistentWrite")
         self.gridlayout.addWidget(self.consistentWrite, 1, 2, 1, 1)
+
+        self.consistentRebuild = QtWidgets.QPushButton(self.widget)
+        self.consistentRebuild.setMinimumSize(QtCore.QSize(0, 38))
+        self.consistentRebuild.setObjectName("consistentRebuild")
+        self.gridlayout.addWidget(self.consistentRebuild, 1, 1, 1, 1)
+
+
         self.consistentPrint = QtWidgets.QPushButton(self.widget)
         self.consistentPrint.setMinimumSize(QtCore.QSize(0, 38))
         self.consistentPrint.setMaximumSize(QtCore.QSize(32767, 36))
@@ -148,6 +155,7 @@ class Ui_Form1(object):
         self.latestPrint.setText(_translate("Form1", "Print Changes"))
         self.textLabel1.setText(_translate("Form1", "<html><head/><body><p>Key: <span style=\" color:#999600;\">In Clash</span>, <span style=\" color:#ff0000;\">Causing Clash</span>, <span style=\" color:#a020f0;\">Invalid</span>, </p></body></html>"))
         self.textLabel1_2.setText(_translate("Form1", "Update Available"))
+        self.consistentRebuild.setText("Select Versions")
 
 
 

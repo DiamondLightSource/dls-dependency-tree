@@ -7,8 +7,10 @@ import traceback
 from argparse import ArgumentParser
 from subprocess import PIPE, Popen
 from typing import Optional
+import re
+from .versions_screen import VersionSelectionScreen
 
-from PyQt5.QtCore import QProcess, Qt
+from PyQt5.QtCore import QProcess, Qt, QEventLoop
 from PyQt5.QtGui import QBrush, QColor, QFont, QPalette
 from PyQt5.QtWidgets import (
     QApplication,
@@ -27,7 +29,7 @@ from PyQt5.QtWidgets import (
 from .dependency_checker_ui import Ui_Form1
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
-from .ioc_build import build_ioc
+from .ioc_builder import build_ioc
 
 author = "Tom Cobb"
 usage = """
@@ -212,7 +214,19 @@ class TreeView(QTreeWidget):
             QMessageBox.No,
         )
         if response == QMessageBox.Yes:
-            build_ioc(release_path)
+            text = "Building IOC, please wait"
+            x = formLog(text, self)
+            x.setWindowTitle("Building...")
+            x.show()
+            stdout, stderr = build_ioc(release_path)
+            x.close()
+            x = formLog(stdout, self)
+            x.setWindowTitle("stdout")
+            x.show()
+            if stderr:
+                x = formLog(stderr, self)
+                x.setWindowTitle("stderr not empty on build")
+                x.show()
 
     def printChanges(self):
         """Print changes to dependencies."""
@@ -220,6 +234,18 @@ class TreeView(QTreeWidget):
         x = formLog(text, self)
         x.setWindowTitle("RELEASE Changes")
         x.show()
+
+    def rebuild_tree(self):
+        # screen immediately closes...
+        version_screen = VersionSelectionScreen(self.tree.release())
+        version_screen.setAttribute(Qt.WA_DeleteOnClose)
+        version_screen.show()
+        loop = QEventLoop()
+        version_screen.destroyed.connect(loop.quit)
+        loop.exec()  # block until the screen is closed
+        specified_versions = version_screen.get_version_numbers()
+        self.tree = dependency_tree(None, self.tree.release(), specified_versions=specified_versions)
+        build_gui_tree(self, self.tree)
 
 
 class reverter:
@@ -285,6 +311,11 @@ def dependency_checker() -> None:
         action='store_true',
         help="Enforce strict version numbering",
     )
+    parser.add_argument(
+        "--select-versions",
+        action='store_true',
+        help="Open version selection screen at startup",
+    )
     args = parser.parse_args()
     path = os.path.abspath(args.module_path)
     app = QApplication([])
@@ -292,7 +323,22 @@ def dependency_checker() -> None:
     top = Ui_Form1()
     top.setupUi(window)
     top.statusBar = window.statusBar()
-    tree = dependency_tree(None, path, strict=args.strict)
+    if not re.match(r"^\/dls_sw\/work\/R3\.14\.12\.7\/support\/BL[0-9]{2}[BIJK]-BUILDER"
+                    r"\/etc\/makeIocs\/BL[0-9]{2}[BIJK]-[A-Z0-9]{2}-IOC-[0-9]{2}_RELEASE$",
+                    path):
+        top.buildIoc.setDisabled(True)
+    if args.select_versions:
+        regex = r"^[0-9\-]*(dls)*[0-9\-]*$" if args.strict else None # dls formatting
+        version_screen = VersionSelectionScreen(path, regex)
+        version_screen.setAttribute(Qt.WA_DeleteOnClose)
+        version_screen.show()
+        loop = QEventLoop()
+        version_screen.destroyed.connect(loop.quit)
+        loop.exec()  # block until the screen is closed
+        specified_versions = version_screen.get_version_numbers()
+        tree = dependency_tree(None, path, strict=args.strict, specified_versions=specified_versions)
+    else:
+        tree = dependency_tree(None, path, strict=args.strict)
     window.setWindowTitle(
         "Tree Browser - %s: %s, Epics: %s"
         % (tree.name, tree.version, tree.e.epicsVer())
@@ -329,6 +375,8 @@ def dependency_checker() -> None:
                     displayMessage("Updated tree is identical to Original tree")
                 )
 
+            if loc == "consistent":
+                getattr(top, loc+"Rebuild").clicked.connect(view.rebuild_tree)
         except Exception:
             grid.addWidget(
                 displayMessage("Error in tree update...\n\n" + traceback.format_exc())

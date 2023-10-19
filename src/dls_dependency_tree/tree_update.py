@@ -30,7 +30,7 @@ class dependency_tree_update:
         self.differences: Dict[str, List[str]] = {}
         # original dependency_tree object
         self.old_tree: dependency_tree = tree
-        self.strict=self.old_tree.strict
+        self.strict = self.old_tree.strict
         # new updated dependency_tree object
         self.new_tree: dependency_tree = dependency_tree(strict=self.strict)
 
