@@ -3,11 +3,10 @@ import re
 import shutil
 import os.path
 from typing import Tuple
+from .constants import BUILDER_IOC_REGEX
 
 def build_ioc(release_path: str) -> Tuple[str, str]:
-    if not re.match(r"^\/dls_sw\/work\/R3\.14\.12\.7\/support\/BL[0-9]{2}[BIJK]-BUILDER"
-                    r"\/etc\/makeIocs\/BL[0-9]{2}[BIJK]-[A-Z0-9]{2}-IOC-[0-9]{2}_RELEASE$",
-                    release_path):
+    if not re.match(BUILDER_IOC_REGEX, release_path):
         print("Could not build IOC as not a valid builder RELEASE path")
         return
     parts = release_path.split("/")

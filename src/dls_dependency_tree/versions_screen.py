@@ -2,6 +2,7 @@ from typing import Optional, Dict, Set
 from dls_dependency_tree import dependency_tree
 from PyQt5 import QtWidgets, QtGui, QtCore
 import re
+from .constants import NUMBERS_DASHES_DLS_REGEX, NUMBERS_DASHES_REGEX
 
 
 class VersionSelectionScreen(QtWidgets.QWidget):
