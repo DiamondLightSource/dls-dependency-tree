@@ -215,7 +215,9 @@ class TreeView(QTreeWidget):
         )
         if response == QMessageBox.Yes:
             # x = formLog("Building IOC, please wait", self)
-            output = build_ioc(release_path, check_running_from_work=True)
+            output = build_ioc(release_path, 
+                               check_running_from_work=True, 
+                               loading_box=True)
             if output is None:
                 x = QMessageBox()
                 x.setText("Did not build IOC")

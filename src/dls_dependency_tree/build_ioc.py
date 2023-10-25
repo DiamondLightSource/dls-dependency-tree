@@ -4,10 +4,15 @@ import shutil
 import os.path
 from typing import Tuple, Optional
 from .constants import BUILDER_IOC_REGEX
-from PyQt5.QtWidgets import QMessageBox
+try:
+    from PyQt5.QtWidgets import QMessageBox
+    qt_imported = True
+except:
+    qt_imported = False
 
-def build_ioc(release_path: str, check_running_from_work: bool = False
-) -> Optional[Tuple[str, str]]:
+
+def build_ioc(release_path: str, check_running_from_work: bool = False,
+loading_box: bool = False) -> Optional[Tuple[str, str]]:
     if not re.match(BUILDER_IOC_REGEX, release_path):
         return ("", "Could not build IOC as not a valid builder RELEASE path")
     parts = release_path.split("/")
@@ -20,7 +25,7 @@ def build_ioc(release_path: str, check_running_from_work: bool = False
         stderr = completed_process.stderr.decode()
         if stderr:
             return
-        elif "/dls_sw/work/" in stdout:
+        elif "/dls_sw/work/" in stdout and qt_imported:
             response = QMessageBox.question(
                 None,
                 "Build IOC",
@@ -32,10 +37,12 @@ def build_ioc(release_path: str, check_running_from_work: bool = False
 
             if response == QMessageBox.No:
                 return
-    x = QMessageBox()
-    x.setText("Building IOC, please wait")
-    x.setWindowTitle("Building...")
-    x.show()
+    x = None
+    if loading_box and qt_imported:
+        x = QMessageBox()
+        x.setText("Building IOC, please wait")
+        x.setWindowTitle("Building...")
+        x.show()
     if os.path.isdir(f"{builder_path}/iocs/{ioc_name}"):
         shutil.rmtree(f"{builder_path}/iocs/{ioc_name}", ignore_errors=True)
 
@@ -52,5 +59,6 @@ def build_ioc(release_path: str, check_running_from_work: bool = False
         completed_process.stdout.decode(),
         completed_process.stderr.decode(),
     )
-    x.close()
+    if x is not None:
+        x.close()
     return stdout, stderr
