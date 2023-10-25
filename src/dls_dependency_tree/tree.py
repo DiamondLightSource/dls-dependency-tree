@@ -462,7 +462,7 @@ class dependency_tree:
             and self.name in self.specified_versions
         ):
             return paths
-        return paths[paths.index(self.path) :]
+        return paths[paths.index(self.path):]
 
     def print_tree(self, spaces: int = 0) -> None:
         """Print an ascii art text representation of self."""

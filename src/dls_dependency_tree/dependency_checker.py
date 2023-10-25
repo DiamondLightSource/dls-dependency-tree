@@ -204,7 +204,7 @@ class TreeView(QTreeWidget):
         if response == QMessageBox.Yes:
             self.update.write_changes()
 
-    def confirmBuildIoc(self, release_path):
+    def confirmBuildIoc(self, release_path: str):
         """Popup a confimation box for remaking the IOC."""
         response = QMessageBox.question(
             None,
@@ -214,19 +214,22 @@ class TreeView(QTreeWidget):
             QMessageBox.No,
         )
         if response == QMessageBox.Yes:
-            text = "Building IOC, please wait"
-            x = formLog(text, self)
-            x.setWindowTitle("Building...")
-            x.show()
-            stdout, stderr = build_ioc(release_path)
-            x.close()
-            x = formLog(stdout, self)
-            x.setWindowTitle("stdout")
-            x.show()
-            if stderr:
-                x = formLog(stderr, self)
-                x.setWindowTitle("stderr not empty on build")
+            # x = formLog("Building IOC, please wait", self)
+            output = build_ioc(release_path, check_running_from_work=True)
+            if output is None:
+                x = QMessageBox()
+                x.setText("Did not build IOC")
+                x.setWindowTitle("Did not build")
+                x.exec()
+            else:
+                stdout, stderr = output
+                x = formLog(stdout, self)
+                x.setWindowTitle("stdout")
                 x.show()
+                if stderr:
+                    x = formLog(stderr, self)
+                    x.setWindowTitle("stderr not empty on build")
+                    x.show()
 
     def printChanges(self):
         """Print changes to dependencies."""
@@ -328,6 +331,7 @@ def dependency_checker() -> None:
     top.statusBar = window.statusBar()
     if not re.match(BUILDER_IOC_REGEX, path):
         top.buildIoc.setDisabled(True)
+        top.buildIoc.setToolTip("Can not build IOC as not in beamline builder directory")
     specified_versions = None
     if args.select_versions:
         regex = NUMBERS_DASHES_DLS_REGEX if args.strict else None  # dls formatting
