@@ -5,10 +5,10 @@ import os.path
 from typing import Tuple
 from .constants import BUILDER_IOC_REGEX
 
+
 def build_ioc(release_path: str) -> Tuple[str, str]:
     if not re.match(BUILDER_IOC_REGEX, release_path):
-        print("Could not build IOC as not a valid builder RELEASE path")
-        return
+        return ("", "Could not build IOC as not a valid builder RELEASE path")
     parts = release_path.split("/")
     builder_path = "/".join(parts[:6])
     ioc_name = parts[-1].rstrip("_RELEASE")
@@ -25,5 +25,8 @@ def build_ioc(release_path: str) -> Tuple[str, str]:
 
     # if we use subprocess we can capture the stdout and stderr and print to dialog box
     completed_process = subprocess.run(make_command, capture_output=True, shell=True)
-    stdout, stderr = completed_process.stdout.decode(), completed_process.stderr.decode()
+    stdout, stderr = (
+        completed_process.stdout.decode(),
+        completed_process.stderr.decode(),
+    )
     return stdout, stderr

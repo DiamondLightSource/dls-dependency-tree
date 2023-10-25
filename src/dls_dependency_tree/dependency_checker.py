@@ -8,8 +8,8 @@ from argparse import ArgumentParser
 from subprocess import PIPE, Popen
 from typing import Optional
 import re
-from .versions_screen import VersionSelectionScreen
-
+from .versions_screen import VersionSelector
+from .constants import NUMBERS_DASHES_DLS_REGEX, BUILDER_IOC_REGEX
 from PyQt5.QtCore import QProcess, Qt, QEventLoop
 from PyQt5.QtGui import QBrush, QColor, QFont, QPalette
 from PyQt5.QtWidgets import (
@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (
 from .dependency_checker_ui import Ui_Form1
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
-from .ioc_builder import build_ioc
+from .build_ioc import build_ioc
 
 author = "Tom Cobb"
 usage = """
@@ -141,7 +141,7 @@ class TreeView(QTreeWidget):
             self.contextItem = item
             menu.addAction("Edit RELEASE", self.externalEdit)
             if hasattr(item.tree, "versions"):
-                if item.tree.versions: # if list is not empty
+                if item.tree.versions:  # if list is not empty
                     if item.tree.version != item.tree.versions[0][0]:
                         menu.addAction("SVN log", self.svn_log)
                 self.context_methods = []
@@ -237,14 +237,17 @@ class TreeView(QTreeWidget):
 
     def rebuild_tree(self):
         # screen immediately closes...
-        version_screen = VersionSelectionScreen(self.tree.release())
+        version_screen = VersionSelector(self.tree.release())
         version_screen.setAttribute(Qt.WA_DeleteOnClose)
         version_screen.show()
         loop = QEventLoop()
         version_screen.destroyed.connect(loop.quit)
         loop.exec()  # block until the screen is closed
         specified_versions = version_screen.get_version_numbers()
-        self.tree = dependency_tree(None, self.tree.release(), specified_versions=specified_versions)
+        self.tree = dependency_tree(
+            None, self.tree.release(), specified_versions=specified_versions
+        )
+        self.update = dependency_tree_update(self.tree, consistent=True, update=True)
         build_gui_tree(self, self.tree)
 
 
@@ -308,12 +311,12 @@ def dependency_checker() -> None:
     )
     parser.add_argument(
         "--strict",
-        action='store_true',
+        action="store_true",
         help="Enforce strict version numbering",
     )
     parser.add_argument(
         "--select-versions",
-        action='store_true',
+        action="store_true",
         help="Open version selection screen at startup",
     )
     args = parser.parse_args()
@@ -323,22 +326,19 @@ def dependency_checker() -> None:
     top = Ui_Form1()
     top.setupUi(window)
     top.statusBar = window.statusBar()
-    if not re.match(r"^\/dls_sw\/work\/R3\.14\.12\.7\/support\/BL[0-9]{2}[BIJK]-BUILDER"
-                    r"\/etc\/makeIocs\/BL[0-9]{2}[BIJK]-[A-Z0-9]{2}-IOC-[0-9]{2}_RELEASE$",
-                    path):
+    if not re.match(BUILDER_IOC_REGEX, path):
         top.buildIoc.setDisabled(True)
+    specified_versions = None
     if args.select_versions:
-        regex = r"^[0-9\-]*(dls)*[0-9\-]*$" if args.strict else None # dls formatting
-        version_screen = VersionSelectionScreen(path, regex)
+        regex = NUMBERS_DASHES_DLS_REGEX if args.strict else None  # dls formatting
+        version_screen = VersionSelector(path, regex)
         version_screen.setAttribute(Qt.WA_DeleteOnClose)
         version_screen.show()
         loop = QEventLoop()
         version_screen.destroyed.connect(loop.quit)
         loop.exec()  # block until the screen is closed
         specified_versions = version_screen.get_version_numbers()
-        tree = dependency_tree(None, path, strict=args.strict, specified_versions=specified_versions)
-    else:
-        tree = dependency_tree(None, path, strict=args.strict)
+    tree = dependency_tree(None, path, specified_versions=specified_versions)
     window.setWindowTitle(
         "Tree Browser - %s: %s, Epics: %s"
         % (tree.name, tree.version, tree.e.epicsVer())
@@ -363,7 +363,6 @@ def dependency_checker() -> None:
             )
             if loc == "original" or not update.new_tree == tree:
                 view = TreeView(update.new_tree, loc, getattr(top, loc + "Frame"))
-
                 setattr(view, "top", top)
                 setattr(view, "update", update)
 
@@ -376,7 +375,7 @@ def dependency_checker() -> None:
                 )
 
             if loc == "consistent":
-                getattr(top, loc+"Rebuild").clicked.connect(view.rebuild_tree)
+                getattr(top, loc + "Rebuild").clicked.connect(view.rebuild_tree)
         except Exception:
             grid.addWidget(
                 displayMessage("Error in tree update...\n\n" + traceback.format_exc())

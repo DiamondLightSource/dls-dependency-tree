@@ -33,9 +33,8 @@ class dependency_tree:
         includes: bool = True,
         warnings: bool = True,
         hostarch: Optional[str] = None,
-        strict: bool = False,
         specified_versions: Optional[Union[Set[str], Dict[str, Set[str]]]] = None,
-        release: Optional[str] = None
+        release: Optional[str] = None,
     ):
         """Initialise the object.
 
@@ -54,7 +53,6 @@ class dependency_tree:
         self.includes = includes
         self.warnings = warnings
         self._release: Optional[str] = release
-        self.strict = strict
         self.specified_versions = specified_versions
         # this is the epics host arch
         if hostarch:
@@ -63,7 +61,6 @@ class dependency_tree:
             self.hostarch = os.environ.get("EPICS_HOST_ARCH", "linux-x86_64")
         # dls.environment object for getting paths and release order
         if self.parent:
-            self.strict = self.parent.strict
             self.specified_versions = self.parent.specified_versions
             self.e: dls_ade.dls_environment.environment = self.parent.e.copy()
         else:
@@ -95,8 +92,7 @@ class dependency_tree:
             includes=self.includes,
             warnings=self.warnings,
             hostarch=self.hostarch,
-            strict=self.strict,
-            release=self._release
+            release=self._release,
         )
         new_tree.e = self.e.copy()
         new_tree.path = self.path
@@ -155,17 +151,21 @@ class dependency_tree:
         paths = []
         ignore_current = False
         if os.path.isdir(prefix):
-            if isinstance(self.specified_versions, dict) and self.name in self.specified_versions:
+            if (
+                isinstance(self.specified_versions, dict)
+                and self.name in self.specified_versions
+            ):
                 ignore_current = True
-                paths = [os.path.join(prefix, v) for v in os.listdir(prefix) if v in self.specified_versions[self.name]]
+                paths = [
+                    os.path.join(prefix, v)
+                    for v in os.listdir(prefix)
+                    if v in self.specified_versions[self.name]
+                ]
             else:
                 for version in os.listdir(prefix):
                     if ".tar.gz" in version:
                         continue
-                    if not self.strict or re.match(
-                        NUMBERS_DASHES_DLS_REGEX, version
-                    ):
-                        paths.append(os.path.join(prefix, version))
+                    paths.append(os.path.join(prefix, version))
         if self.path not in paths and not ignore_current:
             paths = [self.path] + paths
         # return paths listed in ascending order
@@ -345,7 +345,6 @@ class dependency_tree:
                     includes=self.includes,
                     warnings=self.warnings,
                     hostarch=self.hostarch,
-                    strict=self.strict,
                 )
                 if new_leaf.name:
                     self.leaves.append(new_leaf)
@@ -458,9 +457,12 @@ class dependency_tree:
     def updates(self) -> List[str]:
         """Return all possible paths for self that are considered updates."""
         paths = self.__possible_paths()
-        if isinstance(self.specified_versions, dict):
+        if (
+            isinstance(self.specified_versions, dict)
+            and self.name in self.specified_versions
+        ):
             return paths
-        return paths[paths.index(self.path):]
+        return paths[paths.index(self.path) :]
 
     def print_tree(self, spaces: int = 0) -> None:
         """Print an ascii art text representation of self."""
