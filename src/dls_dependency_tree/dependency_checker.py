@@ -9,7 +9,7 @@ from subprocess import PIPE, Popen
 from typing import Optional
 import re
 from .versions_screen import VersionSelector
-from .constants import NUMBERS_DASHES_DLS_REGEX, BUILDER_IOC_REGEX
+from .constants import IOC_TMPDIR, NUMBERS_DASHES_DLS_REGEX, BUILDER_IOC_REGEX
 from PyQt5.QtCore import QProcess, Qt, QEventLoop
 from PyQt5.QtGui import QBrush, QColor, QFont, QPalette
 from PyQt5.QtWidgets import (
@@ -25,7 +25,6 @@ from PyQt5.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
 )
-
 from .dependency_checker_ui import Ui_Form1
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
@@ -208,15 +207,14 @@ class TreeView(QTreeWidget):
         """Popup a confimation box for remaking the IOC."""
         response = QMessageBox.question(
             None,
-            "Build IOC",
-            "Are you sure you want to remake the IOC?",
+            "Build Test IOC",
+            f"Build the IOC in {IOC_TMPDIR}?",
             QMessageBox.Yes,
             QMessageBox.No,
         )
         if response == QMessageBox.Yes:
             # x = formLog("Building IOC, please wait", self)
             output = build_ioc(release_path, 
-                               check_running_from_work=True, 
                                loading_box=True)
             if output is None:
                 x = QMessageBox()
