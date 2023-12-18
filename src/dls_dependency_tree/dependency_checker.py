@@ -24,10 +24,11 @@ from PyQt5.QtWidgets import (
     QTreeWidgetItem,
 )
 
+from .constants import IOC_TMPDIR
 from .dependency_checker_ui import Ui_Form1
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
-from .ioc_build import build_ioc
+from .build_ioc import build_ioc
 
 author = "Tom Cobb"
 usage = """
@@ -206,13 +207,19 @@ class TreeView(QTreeWidget):
         """Popup a confimation box for remaking the IOC."""
         response = QMessageBox.question(
             None,
-            "Build IOC",
-            "Are you sure you want to remake the IOC?",
+            "Build Test IOC",
+            f"Build the ioc in {IOC_TMPDIR}?",
             QMessageBox.Yes,
             QMessageBox.No,
         )
         if response == QMessageBox.Yes:
-            build_ioc(release_path)
+            stdout, stderr = build_ioc(release_path, loading_box=True)
+            if stderr:
+                x = formLog(stderr, self)
+                x.setWindowTitle("stderr not empty on build")
+                x.show()
+
+
 
     def printChanges(self):
         """Print changes to dependencies."""
