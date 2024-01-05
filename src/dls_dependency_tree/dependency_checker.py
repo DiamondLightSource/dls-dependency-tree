@@ -6,6 +6,7 @@ import sys
 import traceback
 from argparse import ArgumentParser
 from subprocess import PIPE, Popen
+import re
 from typing import Optional
 
 from PyQt5.QtCore import QProcess, Qt
@@ -24,7 +25,7 @@ from PyQt5.QtWidgets import (
     QTreeWidgetItem,
 )
 
-from .constants import IOC_TMPDIR
+from .constants import BUILDER_IOC_REGEX, IOC_TMPDIR
 from .dependency_checker_ui import Ui_Form1
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
@@ -306,7 +307,9 @@ def dependency_checker() -> None:
     )
 
     getattr(top, "buildIoc").clicked.connect(lambda: view.confirmBuildIoc(path))
-
+    # disable build ioc button when we are updating a support package instead of an IOC
+    if not re.match(BUILDER_IOC_REGEX, path):
+        top.buildIoc.setDisabled(True)
     for loc in ["original", "latest", "consistent"]:
 
         def displayMessage(message):
