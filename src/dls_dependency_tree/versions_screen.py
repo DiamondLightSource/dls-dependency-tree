@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Set
+from typing import Optional, Dict, List, Set
 from dls_dependency_tree import dependency_tree
 from PyQt5 import QtWidgets, QtGui, QtCore
 import re
@@ -7,14 +7,10 @@ from .constants import NUMBERS_DASHES_DLS_REGEX, NUMBERS_DASHES_REGEX
 
 class VersionSelector(QtWidgets.QWidget):
     def __init__(self, release_path, regex: Optional[str] = None) -> None:
-        self.versions: Dict[str, Set[Version]] = {}
+        self.versions: Dict[str, List[str]] = {}
         current_tree = dependency_tree(None, release_path)
         for leaf in current_tree.leaves:
-            self.versions[leaf.name] = set()
-            paths = leaf.updates()
-            for path in paths:
-                version = Version(path, regex=regex)
-                self.versions[leaf.name].add(version)
+            self.versions[leaf.name] = [Version(path, regex=regex) for path in leaf.updates()]
         super(VersionSelector, self).__init__()
 
         myBoxLayout = QtWidgets.QGridLayout()
