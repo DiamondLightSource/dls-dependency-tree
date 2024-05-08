@@ -33,7 +33,7 @@ class dependency_tree:
         includes: bool = True,
         warnings: bool = True,
         hostarch: Optional[str] = None,
-        specified_versions: Optional[Union[Set[str], Dict[str, Set[str]]]] = None,
+        specified_versions: Optional[Dict[str, Set[str]]] = None,
         release: Optional[str] = None,
     ):
         """Initialise the object.
@@ -453,6 +453,9 @@ class dependency_tree:
             ]
             clashes[name] = new_list
         return clashes
+
+    def all_paths(self):
+        return self.__possible_paths()
 
     def updates(self) -> List[str]:
         """Return all possible paths for self that are considered updates."""

@@ -6,20 +6,28 @@ from .constants import NUMBERS_DASHES_DLS_REGEX, NUMBERS_DASHES_REGEX
 
 
 class VersionSelector(QtWidgets.QWidget):
-    def __init__(self, release_path, regex: Optional[str] = None) -> None:
-        self.versions: Dict[str, List[str]] = {}
+    def __init__(self, release_path: str, regex: Optional[str] = None) -> None:
+        self.versions: Dict[str, Dict[str, List[Version]]] = {}
         current_tree = dependency_tree(None, release_path)
         for leaf in current_tree.leaves:
-            self.versions[leaf.name] = [Version(path, regex=regex) for path in leaf.updates()]
+            all_paths = leaf.all_paths()
+            updates = leaf.updates()
+            self.versions[leaf.name] = {}
+            self.versions[leaf.name]["new"] = [
+                Version(path, regex=regex) for path in updates
+            ]
+            self.versions[leaf.name]["old"] = [
+                Version(path, regex=regex) for path in all_paths if path not in updates
+            ]
         super(VersionSelector, self).__init__()
 
         myBoxLayout = QtWidgets.QGridLayout()
         self.setLayout(myBoxLayout)
         module_number = -1
-        self.checkboxes = {}
+        self.checkboxes: Dict[str, Dict[str, List[QtWidgets.QAction]]] = {}
         self.setting_checkbox_default = True
         for module_name, versions in self.versions.items():
-            self.checkboxes[module_name] = []
+            self.checkboxes[module_name] = {"new": [], "old": []}
             module_number += 1
             toolbutton = QtWidgets.QToolButton(self)
             toolbutton.setText(module_name)
@@ -32,14 +40,24 @@ class VersionSelector(QtWidgets.QWidget):
             none_action.module = module_name
             none_action.setCheckable(True)
             none_action.toggled.connect(lambda: self.set_all_for_module(False))
-            for version in versions:
+            for version in versions["new"]:
                 action = toolmenu.addAction("%s" % version)
                 action.version = version
                 action.setCheckable(True)
                 action.toggled.connect(self.onClicked)
                 if version.allowed:
                     action.setChecked(True)
-                self.checkboxes[module_name].append(action)
+                self.checkboxes[module_name]["new"].append(action)
+            for version in versions["old"]:
+                action = toolmenu.addAction("%s (older)" % version)
+                action.version = version
+                action.setCheckable(True)
+                action.toggled.connect(self.onClicked)
+                action.setChecked(False)
+                action.setEnabled(False)
+                self.checkboxes[module_name]["old"].append(action)
+
+
             toolbutton.setMenu(toolmenu)
             toolbutton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
             myBoxLayout.addWidget(toolbutton, module_number // 3, module_number % 3)
@@ -70,18 +88,39 @@ class VersionSelector(QtWidgets.QWidget):
         toolbutton.clicked.connect(lambda: self.set_all_modules(False))
         myBoxLayout.addWidget(toolbutton, module_number // 3 + 2, 0)
 
+        toolbutton = QtWidgets.QPushButton(self)
+        toolbutton.setText("Enable older versions")
+        toolbutton.clicked.connect(lambda: self.enable_old_modules(True))
+        myBoxLayout.addWidget(toolbutton, module_number // 3 + 2, 1)
+
+        toolbutton = QtWidgets.QPushButton(self)
+        toolbutton.setText("Disable older versions")
+        toolbutton.clicked.connect(lambda: self.enable_old_modules(False))
+        myBoxLayout.addWidget(toolbutton, module_number // 3 + 2, 2)
+
         self.setting_checkbox_default = False
+
+    def enable_old_modules(self, enable: bool):
+        for module_versions in self.checkboxes.values():
+            for button in module_versions["old"]:
+                button.setEnabled(enable)
+                if not enable:
+                    button.setChecked(False)
 
     def set_all_modules(self, allowed: bool, regex: Optional[str] = None) -> None:
         for module_versions in self.checkboxes.values():
-            for button in module_versions:
+            for button in module_versions["new"] + module_versions["old"]:
+                if not button.isEnabled():
+                    button.setChecked(False)
+                    continue
                 if regex is None or bool(re.match(regex, button.version.version)):
                     button.setChecked(allowed)
 
     def set_all_for_module(self, allowed: bool) -> None:
         sender = self.sender()
-        for button in self.checkboxes[sender.module]:
-            button.setChecked(allowed)
+        for button in self.checkboxes[sender.module]["new"] + self.checkboxes[sender.module]["old"]:
+            if button.isEnabled():
+                button.setChecked(allowed)
         sender.setChecked(False)
 
     def onClicked(self) -> None:
@@ -94,7 +133,7 @@ class VersionSelector(QtWidgets.QWidget):
         version_numbers = {}
         for module, versions in self.versions.items():
             version_numbers[module] = set()
-            for version in [v for v in versions if v.allowed]:
+            for version in [v for v in versions["new"] + versions["old"] if v.allowed]:
                 version_numbers[module].add(version.version)
         return version_numbers
 

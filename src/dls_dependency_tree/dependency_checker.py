@@ -247,10 +247,11 @@ class TreeView(QTreeWidget):
         version_screen.destroyed.connect(loop.quit)
         loop.exec()  # block until the screen is closed
         specified_versions = version_screen.get_version_numbers()
+        print(self.tree.release(), specified_versions)
         self.tree = dependency_tree(
             None, self.tree.release(), specified_versions=specified_versions
         )
-        self.update = dependency_tree_update(self.tree, consistent=True, update=True)
+        self.update = dependency_tree_update(self.tree, consistent=True, update=False)
         build_gui_tree(self, self.tree)
 
 
@@ -342,6 +343,7 @@ def dependency_checker() -> None:
         version_screen.destroyed.connect(loop.quit)
         loop.exec()  # block until the screen is closed
         specified_versions = version_screen.get_version_numbers()
+        print(path)
     tree = dependency_tree(None, path, specified_versions=specified_versions)
     window.setWindowTitle(
         "Tree Browser - %s: %s, Epics: %s"
