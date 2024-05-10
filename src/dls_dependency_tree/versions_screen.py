@@ -6,9 +6,8 @@ from .constants import NUMBERS_DASHES_DLS_REGEX, NUMBERS_DASHES_REGEX
 
 
 class VersionSelector(QtWidgets.QWidget):
-    def __init__(self, release_path: str, regex: Optional[str] = None) -> None:
+    def __init__(self, current_tree: dependency_tree, regex: Optional[str] = None) -> None:
         self.versions: Dict[str, Dict[str, List[Version]]] = {}
-        current_tree = dependency_tree(None, release_path)
         for leaf in current_tree.leaves:
             all_paths = leaf.all_paths()
             updates = leaf.updates()

@@ -239,21 +239,21 @@ class TreeView(QTreeWidget):
         x.show()
 
     def rebuild_tree(self):
-        # screen immediately closes...
-        version_screen = VersionSelector(self.tree.release())
-        version_screen.setAttribute(Qt.WA_DeleteOnClose)
-        version_screen.show()
-        loop = QEventLoop()
-        version_screen.destroyed.connect(loop.quit)
-        loop.exec()  # block until the screen is closed
-        specified_versions = version_screen.get_version_numbers()
-        print(self.tree.release(), specified_versions)
+        specified_versions = get_specified_versions(self.tree)
         self.tree = dependency_tree(
             None, self.tree.release(), specified_versions=specified_versions
         )
         self.update = dependency_tree_update(self.tree, consistent=True, update=False)
         build_gui_tree(self, self.tree)
 
+def get_specified_versions(tree: dependency_tree, regex: Optional[str] = None):
+        version_screen = VersionSelector(tree, regex)
+        version_screen.setAttribute(Qt.WA_DeleteOnClose)
+        version_screen.show()
+        loop = QEventLoop()
+        version_screen.destroyed.connect(loop.quit)
+        loop.exec()  # block until the screen is closed
+        return version_screen.get_version_numbers()
 
 class reverter:
     """One shot class to revert a leaf in a list view to path."""
@@ -336,14 +336,14 @@ def dependency_checker() -> None:
     specified_versions = None
     if args.select_versions:
         regex = NUMBERS_DASHES_DLS_REGEX if args.strict else None  # dls formatting
-        version_screen = VersionSelector(path, regex)
+        tree = dependency_tree(None, path)
+        version_screen = VersionSelector(tree, regex)
         version_screen.setAttribute(Qt.WA_DeleteOnClose)
         version_screen.show()
         loop = QEventLoop()
         version_screen.destroyed.connect(loop.quit)
         loop.exec()  # block until the screen is closed
         specified_versions = version_screen.get_version_numbers()
-        print(path)
     tree = dependency_tree(None, path, specified_versions=specified_versions)
     window.setWindowTitle(
         "Tree Browser - %s: %s, Epics: %s"
