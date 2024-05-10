@@ -203,19 +203,24 @@ class TreeView(QTreeWidget):
         if response == QMessageBox.Yes:
             self.update.write_changes()
 
-    def confirmBuildIoc(self, release_path: str):
+    def confirmBuildIoc(self, release_path: str, tmp_build: bool):
         """Popup a confimation box for remaking the IOC."""
+        if tmp_build:
+            build_dir = IOC_TMPDIR
+        else:
+            build_dir = "builder directory"
         response = QMessageBox.question(
             None,
             "Build Test IOC",
-            f"Build the IOC in {IOC_TMPDIR}?",
+            f"Build the IOC in {build_dir}?",
             QMessageBox.Yes,
             QMessageBox.No,
         )
         if response == QMessageBox.Yes:
             # x = formLog("Building IOC, please wait", self)
             output = build_ioc(release_path, 
-                               loading_box=True)
+                               loading_box=True,
+                               tmp_build=tmp_build)
             if output is None:
                 x = QMessageBox()
                 x.setText("Did not build IOC")
@@ -331,8 +336,10 @@ def dependency_checker() -> None:
     top.setupUi(window)
     top.statusBar = window.statusBar()
     if not re.match(BUILDER_IOC_REGEX, path):
-        top.buildIoc.setDisabled(True)
-        top.buildIoc.setToolTip("Can not build IOC as not in beamline builder directory")
+        top.buildTmpIoc.setDisabled(True)
+        top.buildTmpIoc.setToolTip("Can not build IOC as not in beamline builder directory")
+        top.buildBuilderIoc.setDisabled(True)
+        top.buildBuilderIoc.setToolTip("Can not build IOC as not in beamline builder directory")
     specified_versions = None
     if args.select_versions:
         regex = NUMBERS_DASHES_DLS_REGEX if args.strict else None  # dls formatting
@@ -350,7 +357,8 @@ def dependency_checker() -> None:
         % (tree.name, tree.version, tree.e.epicsVer())
     )
 
-    getattr(top, "buildIoc").clicked.connect(lambda: view.confirmBuildIoc(path))
+    getattr(top, "buildTmpIoc").clicked.connect(lambda: view.confirmBuildIoc(path, tmp_build=True))
+    getattr(top, "buildBuilderIoc").clicked.connect(lambda: view.confirmBuildIoc(path, tmp_build=False))
 
     for loc in ["original", "latest", "consistent"]:
 
