@@ -221,7 +221,7 @@ class dependency_tree:
 
         # if the path ends in RELEASE, then use this as the RELEASE file
         # if RELEASE does not exist, make this a dummy module
-        if self.path.endswith("RELEASE"):
+        if self.path.endswith(("RELEASE", "RELEASE.local")):
             self._release = self.path
             self.path = "/".join(self.path.split("/")[:-2])
 
