@@ -1,19 +1,13 @@
+# type: ignore
+import glob
+import importlib.util
+
 from setuptools import setup
 
-# these lines allow the version to be specified in Makefile.private
-import os
-version = os.environ.get("MODULEVER", "0.0")
+# Import <package>._version_git.py without importing <package>
+path = glob.glob(__file__.replace("setup.py", "*/*/_version_git.py"))[0]
+spec = importlib.util.spec_from_file_location("_version_git", path)
+vg = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(vg)
 
-setup(
-    # name of the module
-    name = "dls_dependency_tree",
-    # version: over-ridden by the release script
-    version = version,
-    packages = ["dls_dependency_tree"],
-    # define console_scripts to be 
-    install_requires = [ "dls_ade>=0.5" ],
-    entry_points = {'console_scripts': \
-                    ['dls-dependency-checker.py = dls_dependency_tree.dependency_checker:dependency_checker']},
-#    include_package_data = True,
-    zip_safe = False
-    )
+setup(cmdclass=vg.get_cmdclass(), version=vg.__version__)
