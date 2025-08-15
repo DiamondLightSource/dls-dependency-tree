@@ -1,8 +1,11 @@
-from .tree import dependency_tree  # noqa: F401
-from .tree_update import dependency_tree_update  # noqa: F401
+"""Top level API.
 
-__all__ = []
-__all__.append("dependency_tree")
-__all__.append("dependency_tree_update")
+.. data:: __version__
+    :type: str
 
-__all__.sort()
+    Version number as calculated by https://github.com/pypa/setuptools_scm
+"""
+
+from ._version import __version__
+
+__all__ = ["__version__"]

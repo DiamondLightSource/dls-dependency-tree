@@ -1,12 +1,24 @@
-from dls_dependency_tree import dependency_checker
+"""Interface for ``python -m dls_dependency_tree``."""
+
+from argparse import ArgumentParser
+from collections.abc import Sequence
+
+from . import __version__
 
 __all__ = ["main"]
 
 
-def main():
-    dependency_checker.dependency_checker()
+def main(args: Sequence[str] | None = None) -> None:
+    """Argument parser for the CLI."""
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=__version__,
+    )
+    parser.parse_args(args)
 
 
-# test with: python -m dls_launcher_app
 if __name__ == "__main__":
     main()

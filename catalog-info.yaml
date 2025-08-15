@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: dls-dependency-tree
+  title: dls-dependency-tree
+  description: Tool for parsing support modules and their dependencies for version compatibility
+spec:
+  type: library
+  lifecycle: production
+  owner: group:default/beamline-controls
