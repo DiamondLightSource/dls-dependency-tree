@@ -5,8 +5,8 @@ import os
 import re
 import sys
 from optparse import OptionParser
-from typing import Dict, List, Optional, Tuple, Union
-
+from typing import Dict, List, Optional, Tuple, Union, Set
+from .constants import NUMBERS_DASHES_DLS_REGEX
 import dls_ade.dls_environment
 
 author = "Tom Cobb"
@@ -33,7 +33,8 @@ class dependency_tree:
         includes: bool = True,
         warnings: bool = True,
         hostarch: Optional[str] = None,
-        strict: bool = False
+        specified_versions: Optional[Dict[str, Set[str]]] = None,
+        release: Optional[str] = None,
     ):
         """Initialise the object.
 
@@ -51,8 +52,8 @@ class dependency_tree:
         self.parent = parent
         self.includes = includes
         self.warnings = warnings
-        self._release: Optional[str] = None
-        self.strict = strict
+        self._release: Optional[str] = release
+        self.specified_versions = specified_versions
         # this is the epics host arch
         if hostarch:
             self.hostarch = hostarch
@@ -60,7 +61,7 @@ class dependency_tree:
             self.hostarch = os.environ.get("EPICS_HOST_ARCH", "linux-x86_64")
         # dls.environment object for getting paths and release order
         if self.parent:
-            self.strict = self.parent.strict
+            self.specified_versions = self.parent.specified_versions
             self.e: dls_ade.dls_environment.environment = self.parent.e.copy()
         else:
             self.e = dls_ade.dls_environment.environment()
@@ -91,7 +92,7 @@ class dependency_tree:
             includes=self.includes,
             warnings=self.warnings,
             hostarch=self.hostarch,
-            strict=self.strict
+            release=self._release,
         )
         new_tree.e = self.e.copy()
         new_tree.path = self.path
@@ -148,15 +149,24 @@ class dependency_tree:
             prefix = self.e.prodArea("support")
         prefix = os.path.join(prefix, self.name)
         paths = []
+        ignore_current = False
         if os.path.isdir(prefix):
-            for version in os.listdir(prefix):
-                if ".tar.gz" in version:
-                    continue
-                if not self.strict or re.match(
-                    r"^[0-9\-]*(dls)*[0-9\-]*$", version
-                ):
+            if (
+                isinstance(self.specified_versions, dict)
+                and self.name in self.specified_versions
+            ):
+                ignore_current = True
+                paths = [
+                    os.path.join(prefix, v)
+                    for v in os.listdir(prefix)
+                    if v in self.specified_versions[self.name]
+                ]
+            else:
+                for version in os.listdir(prefix):
+                    if ".tar.gz" in version:
+                        continue
                     paths.append(os.path.join(prefix, version))
-        if self.path not in paths:
+        if self.path not in paths and not ignore_current:
             paths = [self.path] + paths
         # return paths listed in ascending order
         return self.e.sortReleases(paths)
@@ -299,7 +309,6 @@ class dependency_tree:
 
         # now try and substitute macros
         self.macros = self.__substitute_macros(self.macros)
-
         # remove any modules we know to be wrong and make trees from the rest of
         # them
         for module in self.macro_order:
@@ -336,7 +345,6 @@ class dependency_tree:
                     includes=self.includes,
                     warnings=self.warnings,
                     hostarch=self.hostarch,
-                    strict=self.strict
                 )
                 if new_leaf.name:
                     self.leaves.append(new_leaf)
@@ -446,10 +454,18 @@ class dependency_tree:
             clashes[name] = new_list
         return clashes
 
+    def all_paths(self):
+        return self.__possible_paths()
+
     def updates(self) -> List[str]:
         """Return all possible paths for self that are considered updates."""
         paths = self.__possible_paths()
-        return paths[paths.index(self.path) :]
+        if (
+            isinstance(self.specified_versions, dict)
+            and self.name in self.specified_versions
+        ):
+            return paths
+        return paths[paths.index(self.path):]
 
     def print_tree(self, spaces: int = 0) -> None:
         """Print an ascii art text representation of self."""
