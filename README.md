@@ -12,7 +12,6 @@ how it does it, and why people should use it.
 
 Source          | <https://github.com/DiamondLightSource/dls-dependency-tree>
 :---:           | :---:
-Docker          | `docker run ghcr.io/diamondlightsource/dls-dependency-tree:latest`
 Releases        | <https://github.com/DiamondLightSource/dls-dependency-tree/releases>
 
 This is where you should put some images or code snippets that illustrate

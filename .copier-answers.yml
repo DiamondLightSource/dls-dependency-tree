@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 4.1.0-9-g581aaba
+_commit: 5.0.0a1
 _src_path: gh:DiamondLightSource/python-copier-template
 author_email: oliver.copping@diamond.ac.uk
 author_name: Ollie Copping
@@ -8,8 +8,7 @@ component_owner: group:default/beamline-controls
 component_type: library
 description: Tool for parsing support modules and their dependencies for version compatibility
 distribution_name: dls-dependency-tree
-docker: true
-docker_debug: false
+docker: false
 docs_type: README
 git_platform: github.com
 github_org: DiamondLightSource

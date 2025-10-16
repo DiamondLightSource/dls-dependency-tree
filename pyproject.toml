@@ -14,7 +14,7 @@ classifiers = [
 description = "Tool for parsing support modules and their dependencies for version compatibility"
 dependencies = [
     "pyqt5==5.12.2",
-    "dls_ade>=2.4.1",
+    # "dls_ade>=2.4.1",
     "sphinx <4.5.0",
     "sphinx-rtd-theme",
 ] # Add project dependencies here, e.g. ["click", "numpy"]
@@ -25,18 +25,14 @@ requires-python = ">=3.11"
 
 [dependency-groups]
 dev = [
-    "build",
     "copier",
-    "pipdeptree",
     "pre-commit",
     "pyright",
-    "pytest>8.3.4",
+    "pytest",
     "pytest-cov",
     "ruff",
     "tox-uv",
-    "twine",
     "types-mock",
-    "uv~=0.7.0",
 ]
 
 [project.scripts]
@@ -67,6 +63,7 @@ filterwarnings = "error"
 testpaths = "docs src tests"
 
 [tool.coverage.run]
+patch = ["subprocess"]
 data_file = "/tmp/dls_dependency_tree.coverage"
 
 [tool.coverage.paths]
@@ -75,33 +72,28 @@ source = ["src", "**/site-packages/"]
 
 [tool.tox]
 skipsdist = true
-requires = ["tox-uv>=1.25.0"]
 # envs to runs automatically with tox -p
-env_list = ["pre-commit", "type-checking", "docs"] # "tests"]
+env_list = ["pre-commit", "type-checking", "tests"]
 
-[tool.tox.env]
-passenv = { "*" = "" }
-# Include setuptools, pip, ... in the tox envs
-uv_seed = { enabled = true }
+[tool.tox.env_run_base]
+# Pass all environment variables to the test environments
+passenv = ["*"]
 
 [tool.tox.env.pre-commit]
-description = "Run pre-commit"
-allowlist_externals = ["pre-commit"]
+description = "Run pre-commit on all files"
 commands = [
     [
         "pre-commit",
         "run",
-        #"--all-files",
+        "--all-files",
         "--show-diff-on-failure",
-        { replace = "posargs", default = [], extend = true },
+        { replace = "posargs", default = [
+        ], extend = true },
     ],
 ]
 
 [tool.tox.env.type-checking]
-description = "Run type-checking"
-allowlist_externals = ["pyright"]
-# needed otherwise throws reportUnknownMemberType errors
-deps = ["pytest"]
+description = "Run pyright"
 commands = [
     [
         "pyright",
@@ -113,12 +105,10 @@ commands = [
 ]
 
 [tool.tox.env.tests]
-description = "Run tests"
-allowlist_externals = ["pytest"]
+description = "Run tests with coverage"
 commands = [
     [
         "pytest",
-        "-vv",
         "--cov=dls_dependency_tree",
         "--cov-report",
         "term",
@@ -129,7 +119,6 @@ commands = [
     ],
 ]
 
-
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 88
@@ -138,6 +127,7 @@ lint.select = [
     "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
     "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
     "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "N",   # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
     "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
     "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
