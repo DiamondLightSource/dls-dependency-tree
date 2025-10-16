@@ -1,0 +1,5 @@
+{
+    "exclude": [
+        "**/src/dls_dependency_tree/dependency_checker_ui.py",
+    ]
+}
