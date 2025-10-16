@@ -13,6 +13,7 @@ classifiers = [
 ]
 description = "Tool for parsing support modules and their dependencies for version compatibility"
 dependencies = [
+    "distro>=1.9.0",
     "pyqt5==5.12.2",
     # "dls_ade>=2.4.1",
     "sphinx <4.5.0",

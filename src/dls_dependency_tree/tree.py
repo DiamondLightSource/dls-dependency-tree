@@ -8,7 +8,7 @@ import sys
 from optparse import OptionParser
 from typing import Optional
 
-import dls_ade.dls_environment
+import dls_env.dls_environment
 
 author = "Tom Cobb"
 usage = """%prog [options] <module_path>
@@ -62,9 +62,9 @@ class dependency_tree:  # noqa: N801
         # dls.environment object for getting paths and release order
         if self.parent:
             self.strict = self.parent.strict
-            self.e: dls_ade.dls_environment.environment = self.parent.e.copy()
+            self.e: dls_env.dls_environment.environment = self.parent.e.copy()
         else:
-            self.e = dls_ade.dls_environment.environment()
+            self.e = dls_env.dls_environment.environment()
         # list of child dependency_tree leaves of this modules
         self.leaves: list[dependency_tree] = []
         # path to module root (like /dls_sw/work/R3.14.8.2/support/motor)
@@ -133,7 +133,7 @@ class dependency_tree:  # noqa: N801
 
         This is done from self.path using the site environment settings.
         """
-        self.name, self.version = self.e.classifyPath(self.path)
+        self.name, self.version = self.e.classifyPath(self.path)  # type: ignore
         # print self.path, self.e.classifyPath(self.path)
 
     def __possible_paths(self) -> list[str]:
@@ -467,7 +467,7 @@ class dependency_tree:  # noqa: N801
         if ver and ver.group() < "R3.14":
             self.e.setEpics(ver.group())
         # if this cannot be found, use the default value
-        if self.e.epicsVer() < "R3.14":
+        if self.e.epicsVer() < "R3.14":  # type: ignore
             release: str = os.path.join(self.path, "config", "RELEASE")
         else:
             release = os.path.join(self.path, "configure", "RELEASE")
