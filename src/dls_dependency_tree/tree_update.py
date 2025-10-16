@@ -1,13 +1,13 @@
 #!/bin/env dls-python
 """Script to update the dependency tree."""
+
 import os
 import shutil
-from typing import Dict, List, Optional
 
 from .tree import dependency_tree
 
 
-class dependency_tree_update:
+class dependency_tree_update:  # noqa: N801
     """Class for updating a dependency_tree object."""
 
     #############
@@ -27,10 +27,10 @@ class dependency_tree_update:
         # dict of lists of paths for each module
         # - self.differences[module][0]=old_tree_module.path
         # - self.differences[module][-1]=new_tree_module.path
-        self.differences: Dict[str, List[str]] = {}
+        self.differences: dict[str, list[str]] = {}
         # original dependency_tree object
         self.old_tree: dependency_tree = tree
-        self.strict=self.old_tree.strict
+        self.strict = self.old_tree.strict
         # new updated dependency_tree object
         self.new_tree: dependency_tree = dependency_tree(strict=self.strict)
 
@@ -103,17 +103,18 @@ class dependency_tree_update:
         """Update new_tree to latest versions of everything."""
         for leaf in self.new_tree.leaves:
             if leaf.name in self.differences:
-                new_leaf = dependency_tree(leaf.parent, self.differences[leaf.name][-1],
-                                           strict=self.strict)
+                new_leaf = dependency_tree(
+                    leaf.parent, self.differences[leaf.name][-1], strict=self.strict
+                )
                 new_leaf.versions = leaf.versions
                 self.new_tree.replace_leaf(leaf, new_leaf)
 
     def make_consistent(self) -> None:
         """Roll back the changes we made in update_tree() until it is consistent."""
-        clashes: Dict[str, List[dependency_tree]] = self.new_tree.clashes(
+        clashes: dict[str, list[dependency_tree]] = self.new_tree.clashes(
             print_warnings=False
         )
-        agenda: Optional[dependency_tree] = None
+        agenda: dependency_tree | None = None
         lasti: int = -1
         print("Making a consistent set of releases, press Ctrl-C to interrupt...")
         while clashes:
@@ -152,9 +153,7 @@ class dependency_tree_update:
         if len(paths) < 3:
             del self.differences[leaf.name]
         new_leaf = dependency_tree(leaf.parent, new_leaf_path, strict=self.strict)
-        print(
-            "Reverting %s from %s to %s" % (leaf.name, leaf.version, new_leaf.version)
-        )
+        print(f"Reverting {leaf.name} from {leaf.version} to {new_leaf.version}")
         new_leaf.versions = leaf.versions
         self.new_tree.replace_leaf(leaf, new_leaf)
 

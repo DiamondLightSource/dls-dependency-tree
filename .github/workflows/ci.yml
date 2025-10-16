@@ -26,10 +26,6 @@ jobs:
       matrix:
         runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
         python-version: ["3.11", "3.12", "3.13"]
-        include:
-          # Include one that runs in the dev environment
-          - runs-on: "ubuntu-latest"
-            python-version: "dev"
       fail-fast: false
     uses: ./.github/workflows/_test.yml
     with:
@@ -39,9 +35,11 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   container:
-    needs: check
-    if: needs.check.outputs.branch-pr == ''
+    needs: test
+    if: always()
     uses: ./.github/workflows/_container.yml
+    with:
+      publish: ${{ needs.test.result == 'success' }}
     permissions:
       contents: read
       packages: write

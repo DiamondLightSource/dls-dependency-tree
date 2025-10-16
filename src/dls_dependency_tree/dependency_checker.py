@@ -1,12 +1,12 @@
 #!/bin/env dls-python3
 """Script to check the dependencies of a given module."""
+
 import os
 import signal
 import sys
 import traceback
 from argparse import ArgumentParser
 from subprocess import PIPE, Popen
-from typing import Optional
 
 from PyQt5.QtCore import QProcess, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QPalette
@@ -25,9 +25,9 @@ from PyQt5.QtWidgets import (
 )
 
 from .dependency_checker_ui import Ui_Form1
+from .ioc_build import build_ioc
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
-from .ioc_build import build_ioc
 
 author = "Tom Cobb"
 usage = """
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 def build_gui_tree(
     list_view: "TreeView",
     tree: dependency_tree,
-    parent: Optional[QTreeWidgetItem] = None,
+    parent: QTreeWidgetItem | None = None,
 ):
     """Build GUI Tree.
 
@@ -69,8 +69,8 @@ def build_gui_tree(
     else:
         child = QTreeWidgetItem(list_view)
         list_view.child = child
-    child.setText(0, "%s: %s" % (tree.name, tree.version))
-    setattr(child, "tree", tree)
+    child.setText(0, f"{tree.name}: {tree.version}")
+    child.tree = tree
     fg = QBrush(Qt.GlobalColor.black)
     bg = QBrush(QColor(212, 216, 236))  # normal - blue
     open_parents = False
@@ -112,7 +112,7 @@ class TreeView(QTreeWidget):
         tree_type = string "original","consistent" or "latest"
         """
         QTreeWidget.__init__(self, *args)
-        self.setHeaderLabel("%s Tree" % (tree_type.title()))
+        self.setHeaderLabel(f"{tree_type.title()} Tree")
         palette = self.viewport().palette()
         palette.setColor(QPalette.Base, QColor(212, 216, 236))
         self.viewport().setPalette(palette)
@@ -126,7 +126,7 @@ class TreeView(QTreeWidget):
         self.itemEntered.connect(self.mousein)
         self.setMouseTracking(True)
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event):  # noqa: N802
         """Popup a context menu at pos.
 
         Fill it with svn log and revert commands depending on the module
@@ -139,7 +139,7 @@ class TreeView(QTreeWidget):
             self.contextItem = item
             menu.addAction("Edit RELEASE", self.externalEdit)
             if hasattr(item.tree, "versions"):
-                if item.tree.versions: # if list is not empty
+                if item.tree.versions:  # if list is not empty
                     if item.tree.version != item.tree.versions[0][0]:
                         menu.addAction("SVN log", self.svn_log)
                 self.context_methods = []
@@ -148,7 +148,7 @@ class TreeView(QTreeWidget):
                 ]:
                     self.context_methods.append(reverter(item.tree, self, path))
                     menu.addAction(
-                        "Change to %s" % version, self.context_methods[-1].revert
+                        f"Change to {version}", self.context_methods[-1].revert
                     )
             menu.exec_(pos)
 
@@ -165,10 +165,10 @@ class TreeView(QTreeWidget):
         (stdout, stderr) = p.communicate()
         text = stdout.strip()
         x = formLog(text, self)
-        x.setWindowTitle("SVN Log: %s" % leaf.name)
+        x.setWindowTitle(f"SVN Log: {leaf.name}")
         x.show()
 
-    def externalEdit(self):
+    def externalEdit(self):  # noqa: N802
         """Open the configure/RELEASE in gedit."""
         item = self.contextItem
         if item and os.path.isfile(item.tree.release()):
@@ -184,13 +184,13 @@ class TreeView(QTreeWidget):
 
     def mousein(self, item, col):
         """Show item path in the statusBar on mousein."""
-        text = "%s - current: %s" % (item.tree.name, item.tree.path)
+        text = f"{item.tree.name} - current: {item.tree.path}"
         updates = item.tree.updates()
         if len(updates) > 1:
-            text += ", latest: %s" % updates[-1]
+            text += f", latest: {updates[-1]}"
         self.top.statusBar.showMessage(text)
 
-    def confirmWrite(self):
+    def confirmWrite(self):  # noqa: N802
         """Popup a confimation box for writing changes to RELEASE."""
         response = QMessageBox.question(
             None,
@@ -202,7 +202,7 @@ class TreeView(QTreeWidget):
         if response == QMessageBox.Yes:
             self.update.write_changes()
 
-    def confirmBuildIoc(self, release_path):
+    def confirmBuildIoc(self, release_path):  # noqa: N802
         """Popup a confimation box for remaking the IOC."""
         response = QMessageBox.question(
             None,
@@ -214,7 +214,7 @@ class TreeView(QTreeWidget):
         if response == QMessageBox.Yes:
             build_ioc(release_path)
 
-    def printChanges(self):
+    def printChanges(self):  # noqa: N802
         """Print changes to dependencies."""
         text = self.update.print_changes()
         x = formLog(text, self)
@@ -222,7 +222,7 @@ class TreeView(QTreeWidget):
         x.show()
 
 
-class reverter:
+class reverter:  # noqa: N801
     """One shot class to revert a leaf in a list view to path."""
 
     def __init__(self, leaf, list_view, path):
@@ -245,7 +245,7 @@ class reverter:
         build_gui_tree(self.list_view, self.list_view.tree)
 
 
-class formLog(QDialog):
+class formLog(QDialog):  # noqa: N801
     """SVN log form."""
 
     def __init__(self, text, *args):
@@ -254,7 +254,7 @@ class formLog(QDialog):
         text = text to display in a readonly QTextEdit
         """
         QDialog.__init__(self, *args)
-        formLayout = QGridLayout(self)  # ,1,1,11,6,"formLayout")
+        formLayout = QGridLayout(self)  # ,1,1,11,6,"formLayout")  # noqa: N806
         self.scroll = QScrollArea(self)
         self.lab = QTextEdit()
         self.lab.setFont(QFont("monospace", 10))
@@ -282,7 +282,7 @@ def dependency_checker() -> None:
     )
     parser.add_argument(
         "--strict",
-        action='store_true',
+        action="store_true",
         help="Enforce strict version numbering",
     )
     args = parser.parse_args()
@@ -291,23 +291,22 @@ def dependency_checker() -> None:
     window = QMainWindow()
     top = Ui_Form1()
     top.setupUi(window)
-    top.statusBar = window.statusBar()
+    top.statusBar = window.statusBar()  # type: ignore
     tree = dependency_tree(None, path, strict=args.strict)
     window.setWindowTitle(
-        "Tree Browser - %s: %s, Epics: %s"
-        % (tree.name, tree.version, tree.e.epicsVer())
+        f"Tree Browser - {tree.name}: {tree.version}, Epics: {tree.e.epicsVer()}"
     )
 
-    getattr(top, "buildIoc").clicked.connect(lambda: view.confirmBuildIoc(path))
+    top.buildIoc.clicked.connect(lambda: view.confirmBuildIoc(path))
 
     for loc in ["original", "latest", "consistent"]:
 
-        def displayMessage(message):
-            getattr(top, loc + "Write").setEnabled(False)
-            getattr(top, loc + "Print").setEnabled(False)
-            label = QTextEdit(getattr(top, loc + "Frame"))
+        def displayMessage(message):  # noqa: N802
+            getattr(top, loc + "Write").setEnabled(False)  # noqa: B023
+            getattr(top, loc + "Print").setEnabled(False)  # noqa: B023
+            label = QTextEdit(getattr(top, loc + "Frame"))  # noqa: B023
             label.setReadOnly(True)
-            label.setText(loc.title() + " Updated Tree:\n\n" + message)
+            label.setText(loc.title() + " Updated Tree:\n\n" + message)  # noqa: B023
             return label
 
         grid = QGridLayout()
@@ -318,8 +317,8 @@ def dependency_checker() -> None:
             if loc == "original" or not update.new_tree == tree:
                 view = TreeView(update.new_tree, loc, getattr(top, loc + "Frame"))
 
-                setattr(view, "top", top)
-                setattr(view, "update", update)
+                view.top = top
+                view.update = update
 
                 getattr(top, loc + "Write").clicked.connect(view.confirmWrite)
                 getattr(top, loc + "Print").clicked.connect(view.printChanges)
