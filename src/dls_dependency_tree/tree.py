@@ -6,7 +6,7 @@ import re
 import sys
 from optparse import OptionParser
 from typing import Dict, List, Optional, Tuple, Union
-
+from .constants import NUMBERS_DASHES_DLS_REGEX
 import dls_ade.dls_environment
 
 author = "Tom Cobb"
@@ -153,7 +153,7 @@ class dependency_tree:
                 if ".tar.gz" in version:
                     continue
                 if not self.strict or re.match(
-                    r"^[0-9\-]*(dls)*[0-9\-]*$", version
+                   NUMBERS_DASHES_DLS_REGEX, version
                 ):
                     paths.append(os.path.join(prefix, version))
         if self.path not in paths:
