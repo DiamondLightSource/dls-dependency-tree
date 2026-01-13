@@ -19,11 +19,18 @@ class Ui_Form1(object):
         self.gridLayout.setContentsMargins(11, 11, 11, 11)
         self.gridLayout.setSpacing(6)
         self.gridLayout.setObjectName("gridLayout")
-        self.buildIoc = QtWidgets.QPushButton(self.widget)
-        self.buildIoc.setMaximumSize(QtCore.QSize(32767, 36))
-        self.buildIoc.setMinimumSize(QtCore.QSize(0, 38))
-        self.buildIoc.setObjectName("buildIoc")
-        self.gridLayout.addWidget(self.buildIoc, 2, 1, 1, 1)
+        self.buildTmpIoc = QtWidgets.QPushButton(self.widget)
+        self.buildTmpIoc.setMaximumSize(QtCore.QSize(32767, 36))
+        self.buildTmpIoc.setMinimumSize(QtCore.QSize(0, 38))
+        self.buildTmpIoc.setObjectName("buildTmpIoc")
+        self.buildBuilderIoc = QtWidgets.QPushButton(self.widget)
+        self.buildBuilderIoc.setMaximumSize(QtCore.QSize(32767, 36))
+        self.buildBuilderIoc.setMinimumSize(QtCore.QSize(0, 38))
+        self.buildBuilderIoc.setObjectName("buildBuilderIoc")
+        builder_button_layout = QtWidgets.QGridLayout()
+        self.gridLayout.addLayout(builder_button_layout, 2, 1, 1, 1)
+        builder_button_layout.addWidget(self.buildTmpIoc, 0, 0)
+        builder_button_layout.addWidget(self.buildBuilderIoc, 0, 1)
         self._2 = QtWidgets.QGridLayout()
         self._2.setSpacing(6)
         self._2.setObjectName("_2")
@@ -37,16 +44,22 @@ class Ui_Form1(object):
         self.originalPrint.setObjectName("originalPrint")
         self._2.addWidget(self.originalPrint, 1, 0, 1, 1)
         self.originalFrame = QtWidgets.QFrame(self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.originalFrame.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.originalFrame.sizePolicy().hasHeightForWidth()
+        )
         self.originalFrame.setSizePolicy(sizePolicy)
         self.originalFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.originalFrame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.originalFrame.setObjectName("originalFrame")
         self._2.addWidget(self.originalFrame, 0, 0, 1, 3)
-        spacerItem = QtWidgets.QSpacerItem(20, 30, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            20, 30, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+        )
         self._2.addItem(spacerItem, 1, 1, 1, 1)
         self.gridLayout.addLayout(self._2, 0, 0, 1, 1)
         self.gridlayout = QtWidgets.QGridLayout()
@@ -56,18 +69,30 @@ class Ui_Form1(object):
         self.consistentWrite.setMinimumSize(QtCore.QSize(0, 38))
         self.consistentWrite.setObjectName("consistentWrite")
         self.gridlayout.addWidget(self.consistentWrite, 1, 2, 1, 1)
+
+        self.consistentRebuild = QtWidgets.QPushButton(self.widget)
+        self.consistentRebuild.setMinimumSize(QtCore.QSize(0, 38))
+        self.consistentRebuild.setObjectName("consistentRebuild")
+        self.gridlayout.addWidget(self.consistentRebuild, 1, 1, 1, 1)
+
         self.consistentPrint = QtWidgets.QPushButton(self.widget)
         self.consistentPrint.setMinimumSize(QtCore.QSize(0, 38))
         self.consistentPrint.setMaximumSize(QtCore.QSize(32767, 36))
         self.consistentPrint.setObjectName("consistentPrint")
         self.gridlayout.addWidget(self.consistentPrint, 1, 0, 1, 1)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 30, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            20, 30, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+        )
         self.gridlayout.addItem(spacerItem1, 1, 1, 1, 1)
         self.consistentFrame = QtWidgets.QFrame(self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.consistentFrame.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.consistentFrame.sizePolicy().hasHeightForWidth()
+        )
         self.consistentFrame.setSizePolicy(sizePolicy)
         self.consistentFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.consistentFrame.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -82,7 +107,9 @@ class Ui_Form1(object):
         self.latestWrite.setObjectName("latestWrite")
         self.gridlayout1.addWidget(self.latestWrite, 1, 2, 1, 1)
         self.latestPrint = QtWidgets.QPushButton(self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.latestPrint.sizePolicy().hasHeightForWidth())
@@ -90,10 +117,14 @@ class Ui_Form1(object):
         self.latestPrint.setMinimumSize(QtCore.QSize(0, 38))
         self.latestPrint.setObjectName("latestPrint")
         self.gridlayout1.addWidget(self.latestPrint, 1, 0, 1, 1)
-        spacerItem2 = QtWidgets.QSpacerItem(62, 30, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            62, 30, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+        )
         self.gridlayout1.addItem(spacerItem2, 1, 1, 1, 1)
         self.latestFrame = QtWidgets.QFrame(self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.latestFrame.sizePolicy().hasHeightForWidth())
@@ -107,7 +138,9 @@ class Ui_Form1(object):
         self.horizontalLayout.setSpacing(0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.textLabel1 = QtWidgets.QLabel(self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.textLabel1.sizePolicy().hasHeightForWidth())
@@ -118,7 +151,9 @@ class Ui_Form1(object):
         self.textLabel1.setObjectName("textLabel1")
         self.horizontalLayout.addWidget(self.textLabel1)
         self.textLabel1_2 = QtWidgets.QLabel(self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.textLabel1_2.sizePolicy().hasHeightForWidth())
@@ -128,7 +163,12 @@ class Ui_Form1(object):
         self.textLabel1_2.setWordWrap(False)
         self.textLabel1_2.setObjectName("textLabel1_2")
         self.horizontalLayout.addWidget(self.textLabel1_2)
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem3 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Minimum,
+        )
         self.horizontalLayout.addItem(spacerItem3)
         self.gridLayout.addLayout(self.horizontalLayout, 1, 0, 1, 3)
         Form1.setCentralWidget(self.widget)
@@ -139,21 +179,27 @@ class Ui_Form1(object):
     def retranslateUi(self, Form1):
         _translate = QtCore.QCoreApplication.translate
         Form1.setWindowTitle(_translate("Form1", "Form1"))
-        self.buildIoc.setText(_translate("Form1", "Build IOC"))
+        self.buildTmpIoc.setText(_translate("Form1", "Build Test IOC"))
+        self.buildBuilderIoc.setText(_translate("Form1", "Build Builder IOC"))
         self.originalWrite.setText(_translate("Form1", "Write Changes"))
         self.originalPrint.setText(_translate("Form1", "Print Changes"))
         self.consistentWrite.setText(_translate("Form1", "Write Changes"))
         self.consistentPrint.setText(_translate("Form1", "Print Changes"))
         self.latestWrite.setText(_translate("Form1", "Write Changes"))
         self.latestPrint.setText(_translate("Form1", "Print Changes"))
-        self.textLabel1.setText(_translate("Form1", "<html><head/><body><p>Key: <span style=\" color:#999600;\">In Clash</span>, <span style=\" color:#ff0000;\">Causing Clash</span>, <span style=\" color:#a020f0;\">Invalid</span>, </p></body></html>"))
+        self.textLabel1.setText(
+            _translate(
+                "Form1",
+                '<html><head/><body><p>Key: <span style=" color:#999600;">In Clash</span>, <span style=" color:#ff0000;">Causing Clash</span>, <span style=" color:#a020f0;">Invalid</span>, </p></body></html>',
+            )
+        )
         self.textLabel1_2.setText(_translate("Form1", "Update Available"))
-
-
+        self.consistentRebuild.setText("Select Versions")
 
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     Form1 = QtWidgets.QMainWindow()
     ui = Ui_Form1()

@@ -7,8 +7,10 @@ import traceback
 from argparse import ArgumentParser
 from subprocess import PIPE, Popen
 from typing import Optional
-
-from PyQt5.QtCore import QProcess, Qt
+import re
+from .versions_screen import VersionSelector
+from .constants import IOC_TMPDIR, NUMBERS_DASHES_DLS_REGEX, BUILDER_IOC_REGEX
+from PyQt5.QtCore import QProcess, Qt, QEventLoop
 from PyQt5.QtGui import QBrush, QColor, QFont, QPalette
 from PyQt5.QtWidgets import (
     QApplication,
@@ -23,11 +25,10 @@ from PyQt5.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
 )
-
 from .dependency_checker_ui import Ui_Form1
 from .tree import dependency_tree
 from .tree_update import dependency_tree_update
-from .ioc_build import build_ioc
+from .build_ioc import build_ioc
 
 author = "Tom Cobb"
 usage = """
@@ -139,7 +140,7 @@ class TreeView(QTreeWidget):
             self.contextItem = item
             menu.addAction("Edit RELEASE", self.externalEdit)
             if hasattr(item.tree, "versions"):
-                if item.tree.versions: # if list is not empty
+                if item.tree.versions:  # if list is not empty
                     if item.tree.version != item.tree.versions[0][0]:
                         menu.addAction("SVN log", self.svn_log)
                 self.context_methods = []
@@ -202,17 +203,38 @@ class TreeView(QTreeWidget):
         if response == QMessageBox.Yes:
             self.update.write_changes()
 
-    def confirmBuildIoc(self, release_path):
+    def confirmBuildIoc(self, release_path: str, tmp_build: bool):
         """Popup a confimation box for remaking the IOC."""
+        if tmp_build:
+            build_dir = IOC_TMPDIR
+        else:
+            build_dir = "builder directory"
         response = QMessageBox.question(
             None,
-            "Build IOC",
-            "Are you sure you want to remake the IOC?",
+            "Build Test IOC",
+            f"Build the IOC in {build_dir}?",
             QMessageBox.Yes,
             QMessageBox.No,
         )
         if response == QMessageBox.Yes:
-            build_ioc(release_path)
+            # x = formLog("Building IOC, please wait", self)
+            output = build_ioc(release_path, 
+                               loading_box=True,
+                               tmp_build=tmp_build)
+            if output is None:
+                x = QMessageBox()
+                x.setText("Did not build IOC")
+                x.setWindowTitle("Did not build")
+                x.exec()
+            else:
+                stdout, stderr = output
+                x = formLog(stdout, self)
+                x.setWindowTitle("stdout")
+                x.show()
+                if stderr:
+                    x = formLog(stderr, self)
+                    x.setWindowTitle("stderr not empty on build")
+                    x.show()
 
     def printChanges(self):
         """Print changes to dependencies."""
@@ -221,6 +243,22 @@ class TreeView(QTreeWidget):
         x.setWindowTitle("RELEASE Changes")
         x.show()
 
+    def rebuild_tree(self):
+        specified_versions = get_specified_versions(self.tree)
+        self.tree = dependency_tree(
+            None, self.tree.release(), specified_versions=specified_versions
+        )
+        self.update = dependency_tree_update(self.tree, consistent=True, update=False)
+        build_gui_tree(self, self.tree)
+
+def get_specified_versions(tree: dependency_tree, regex: Optional[str] = None):
+        version_screen = VersionSelector(tree, regex)
+        version_screen.setAttribute(Qt.WA_DeleteOnClose)
+        version_screen.show()
+        loop = QEventLoop()
+        version_screen.destroyed.connect(loop.quit)
+        loop.exec()  # block until the screen is closed
+        return version_screen.get_version_numbers()
 
 class reverter:
     """One shot class to revert a leaf in a list view to path."""
@@ -282,8 +320,13 @@ def dependency_checker() -> None:
     )
     parser.add_argument(
         "--strict",
-        action='store_true',
+        action="store_true",
         help="Enforce strict version numbering",
+    )
+    parser.add_argument(
+        "--select-versions",
+        action="store_true",
+        help="Open version selection screen at startup",
     )
     args = parser.parse_args()
     path = os.path.abspath(args.module_path)
@@ -292,13 +335,30 @@ def dependency_checker() -> None:
     top = Ui_Form1()
     top.setupUi(window)
     top.statusBar = window.statusBar()
-    tree = dependency_tree(None, path, strict=args.strict)
+    if not re.match(BUILDER_IOC_REGEX, path):
+        top.buildTmpIoc.setDisabled(True)
+        top.buildTmpIoc.setToolTip("Can not build IOC as not in beamline builder directory")
+        top.buildBuilderIoc.setDisabled(True)
+        top.buildBuilderIoc.setToolTip("Can not build IOC as not in beamline builder directory")
+    specified_versions = None
+    if args.select_versions:
+        regex = NUMBERS_DASHES_DLS_REGEX if args.strict else None  # dls formatting
+        tree = dependency_tree(None, path)
+        version_screen = VersionSelector(tree, regex)
+        version_screen.setAttribute(Qt.WA_DeleteOnClose)
+        version_screen.show()
+        loop = QEventLoop()
+        version_screen.destroyed.connect(loop.quit)
+        loop.exec()  # block until the screen is closed
+        specified_versions = version_screen.get_version_numbers()
+    tree = dependency_tree(None, path, specified_versions=specified_versions)
     window.setWindowTitle(
         "Tree Browser - %s: %s, Epics: %s"
         % (tree.name, tree.version, tree.e.epicsVer())
     )
 
-    getattr(top, "buildIoc").clicked.connect(lambda: view.confirmBuildIoc(path))
+    getattr(top, "buildTmpIoc").clicked.connect(lambda: view.confirmBuildIoc(path, tmp_build=True))
+    getattr(top, "buildBuilderIoc").clicked.connect(lambda: view.confirmBuildIoc(path, tmp_build=False))
 
     for loc in ["original", "latest", "consistent"]:
 
@@ -317,7 +377,6 @@ def dependency_checker() -> None:
             )
             if loc == "original" or not update.new_tree == tree:
                 view = TreeView(update.new_tree, loc, getattr(top, loc + "Frame"))
-
                 setattr(view, "top", top)
                 setattr(view, "update", update)
 
@@ -329,6 +388,8 @@ def dependency_checker() -> None:
                     displayMessage("Updated tree is identical to Original tree")
                 )
 
+            if loc == "consistent":
+                getattr(top, loc + "Rebuild").clicked.connect(view.rebuild_tree)
         except Exception:
             grid.addWidget(
                 displayMessage("Error in tree update...\n\n" + traceback.format_exc())
